@@ -1,10 +1,11 @@
 mod config;
+mod registry;
 mod utils;
 
 use clap::Parser;
 use config::Config;
 
-type GenericResult = Result<(), Box<dyn std::error::Error>>;
+type GenericResult<T> = Result<T, Box<dyn std::error::Error>>;
 
 
 #[derive(Parser, Debug)]
@@ -20,7 +21,8 @@ struct Cli
     port: u16,
 }
 
-fn main() -> GenericResult {
+fn main() -> GenericResult<()>
+{
     let cli = Cli::parse();
 
     // initialize and setup the config singleton
@@ -35,6 +37,8 @@ fn main() -> GenericResult {
     }
 
     println!("Server root: {}", Config::readu().root);
+
+    //registry::generate_registry()?;
 
     Ok(())
 }
