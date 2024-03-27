@@ -2,7 +2,7 @@
 
 use std::sync::{PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-pub const DEFAULT_SERVER: &str = "server";
+pub const DEFAULT_SERVER: &str = "registry";
 pub const DEFAULT_IMAGES: &str = "images.yaml";
 
 pub struct Config
