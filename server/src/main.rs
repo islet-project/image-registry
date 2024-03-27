@@ -1,3 +1,6 @@
-fn main() {
-    println!("Hello, world!");
+type GenericResult = Result<(), Box<dyn std::error::Error>>;
+
+
+fn main() -> GenericResult {
+    Ok(())
 }
