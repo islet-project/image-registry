@@ -29,15 +29,13 @@ impl Config
         }
     }
 
-    // canonicalize in all the paths is unnecessary,
-    // but it's a quick way to make sure they exist
     pub fn set_server_root(&mut self, root: &str) -> std::io::Result<()>
     {
         let root = std::fs::canonicalize(root)?;
         self.root = root.to_string_lossy().to_string();
-        let server = root.join(DEFAULT_SERVER).canonicalize()?;
+        let server = root.join(DEFAULT_SERVER);
         self.server = server.to_string_lossy().to_string();
-        self.images = server.join(DEFAULT_IMAGES).canonicalize()?.to_string_lossy().to_string();
+        self.images = server.join(DEFAULT_IMAGES).to_string_lossy().to_string();
 
         Ok(())
     }

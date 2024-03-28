@@ -19,13 +19,17 @@ struct Cli
     /// server port
     #[arg(short, long, default_value_t = 8888)]
     port: u16,
+
+    /// generate new example registry removing previous one if exists
+    #[arg(short, long)]
+    gen: bool,
 }
 
 fn main() -> GenericResult<()>
 {
     let cli = Cli::parse();
 
-    // initialize and setup the config singleton
+    // handle cmd line option, initialize and setup the config singleton
     {
         if let Some(root) = cli.root {
             Config::writeu().set_server_root(&root)?;
@@ -34,11 +38,16 @@ fn main() -> GenericResult<()>
         }
 
         Config::writeu().port = cli.port;
+
+        if cli.gen {
+            registry::generate_registry()?;
+        }
     }
 
     println!("Server root: {}", Config::readu().root);
 
-    //registry::generate_registry()?;
+    let reg = registry::load()?;
+    println!("{:#?}", reg);
 
     Ok(())
 }
