@@ -5,6 +5,7 @@ mod utils;
 use clap::Parser;
 use config::Config;
 use log::info;
+use registry::Registry;
 
 type GenericResult<T> = Result<T, Box<dyn std::error::Error>>;
 
@@ -43,14 +44,14 @@ fn main() -> GenericResult<()>
         Config::writeu().port = cli.port;
 
         if cli.gen {
-            registry::generate_registry()?;
+            Registry::generate_example()?;
         }
     }
 
     info!("Server root: {}", Config::readu().root);
 
-    let reg = registry::parse_to_hashmap(registry::deserialize()?)?;
-    info!("{:#?}", reg);
+    let reg = Registry::import()?;
+    info!("{:#?}", &*reg);
 
     Ok(())
 }
