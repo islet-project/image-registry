@@ -4,6 +4,7 @@ mod utils;
 
 use clap::Parser;
 use config::Config;
+use log::info;
 
 type GenericResult<T> = Result<T, Box<dyn std::error::Error>>;
 
@@ -27,6 +28,8 @@ struct Cli
 
 fn main() -> GenericResult<()>
 {
+    env_logger::init_from_env(env_logger::Env::default().default_filter_or("info"));
+
     let cli = Cli::parse();
 
     // handle cmd line option, initialize and setup the config singleton
@@ -44,10 +47,10 @@ fn main() -> GenericResult<()>
         }
     }
 
-    println!("Server root: {}", Config::readu().root);
+    info!("Server root: {}", Config::readu().root);
 
     let reg = registry::parse_to_hashmap(registry::deserialize()?)?;
-    println!("{:#?}", reg);
+    info!("{:#?}", reg);
 
     Ok(())
 }

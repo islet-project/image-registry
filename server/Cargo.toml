@@ -12,3 +12,5 @@ serde = { version = "*", features = ["derive"] }
 serde_json = "*"
 serde_yaml = "*"
 uuid = { version = "*", features = ["v4", "fast-rng", "macro-diagnostics", "serde"] }
+log = "*"
+env_logger = "*"
