@@ -46,7 +46,7 @@ fn main() -> GenericResult<()>
 
     println!("Server root: {}", Config::readu().root);
 
-    let reg = registry::load()?;
+    let reg = registry::parse_to_hashmap(registry::deserialize()?)?;
     println!("{:#?}", reg);
 
     Ok(())

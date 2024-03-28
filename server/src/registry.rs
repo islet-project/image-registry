@@ -3,29 +3,61 @@ use crate::utils;
 use crate::GenericResult;
 use protocol::{Manifest, MediaType};
 use serde::{Serialize, Deserialize};
+use uuid::Uuid;
+use std::collections::HashMap;
 use std::path::Path;
 
-#[derive(Debug, Serialize, Deserialize)]
+type Registry = HashMap<Uuid, Image>;
+
+#[derive(Debug)]
 pub struct Image
 {
-    pub manifest: String,
-    pub image: String,
+    pub manifest: Manifest,
+    pub content: String,
 }
 
-pub fn load() -> GenericResult<Vec<Image>>
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ImageSerialized
 {
-    let file = utils::file_read(&Config::readu().images)?;
-    let reg: Vec<Image> = serde_yaml::from_str(&String::from_utf8(file)?)?;
+    pub manifest: String,
+    pub content: String,
+}
+
+pub fn deserialize() -> GenericResult<Vec<ImageSerialized>>
+{
+    let yaml = utils::file_read(&Config::readu().images)?;
+    let reg: Vec<ImageSerialized> = serde_yaml::from_slice(&yaml)?;
 
     Ok(reg)
 }
 
-pub fn save(reg: Vec<Image>) -> GenericResult<()>
+pub fn serialize(reg: Vec<ImageSerialized>) -> GenericResult<()>
 {
     let yaml = serde_yaml::to_string(&reg)?;
     utils::file_write(&Config::readu().images, yaml.as_bytes())?;
 
     Ok(())
+}
+
+// read the yaml, load json manifests and construct uuid keyed hashmap
+pub fn parse_to_hashmap(reg: Vec<ImageSerialized>) -> GenericResult<Registry>
+{
+    let mut ret = Registry::new();
+
+    for img in reg {
+        let path = format!("{}/{}", Config::readu().server, img.manifest);
+        let json = utils::file_read(&path)?;
+        let manifest: Manifest = serde_json::from_slice(&json)?;
+        let uuid = manifest.uuid;
+        let image = Image {
+            manifest,
+            content: img.content,
+        };
+
+        ret.insert(uuid, image);
+    }
+
+    Ok(ret)
 }
 
 pub fn generate_registry() -> GenericResult<()>
@@ -51,14 +83,14 @@ pub fn generate_registry() -> GenericResult<()>
     let mut vi = Vec::new();
     for (m, j) in std::iter::zip(vm, vj) {
         utils::file_write(&format!("{}/{}.json", Config::readu().server, m.uuid), j.as_bytes())?;
-        let image = Image {
+        let image = ImageSerialized {
             manifest: format!("{}.json", m.uuid),
-            image: format!("{}.tgz", m.uuid),
+            content: format!("{}.tgz", m.uuid),
         };
         vi.push(image);
     }
 
-    save(vi)?;
+    serialize(vi)?;
 
     Ok(())
 }
