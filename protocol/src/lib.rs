@@ -1,14 +1,26 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum MediaType {
+    Docker,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Manifest {
+    pub uuid: Uuid,
+    pub name: String,
+    pub vendor: String,
+    pub media_type: MediaType,
+}
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+impl Manifest {
+    pub fn new(name: String, vendor: String, media_type: MediaType) -> Manifest {
+        Manifest {
+            uuid: Uuid::new_v4(),
+            name,
+            vendor,
+            media_type,
+        }
     }
 }
