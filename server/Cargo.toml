@@ -14,3 +14,7 @@ serde_yaml = "*"
 uuid = { version = "*", features = ["v4", "fast-rng", "macro-diagnostics", "serde"] }
 log = "*"
 env_logger = "*"
+tokio = { version = "*", features = [ "full" ] }
+tower = { version = "*", features = ["util", "timeout"] }
+tower-http = { version = "*", features = ["add-extension", "trace"] }
+axum = "*"

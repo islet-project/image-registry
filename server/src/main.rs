@@ -1,4 +1,5 @@
 mod config;
+mod httpd;
 mod registry;
 mod utils;
 
@@ -14,9 +15,13 @@ type GenericResult<T> = Result<T, Box<dyn std::error::Error>>;
 #[command(author, version, about)]
 struct Cli
 {
-    /// runtime server root directory, none to use {crate_root}/server
+    /// runtime server root directory, none to use {crate_root}/registry
     #[arg(short, long)]
     root: Option<String>,
+
+    /// runtime server http root
+    #[arg(short = 't', long, default_value_t = String::from("image"))]
+    http: String,
 
     /// server port
     #[arg(short, long, default_value_t = 8888)]
@@ -27,9 +32,10 @@ struct Cli
     gen: bool,
 }
 
-fn main() -> GenericResult<()>
+#[tokio::main]
+async fn main() -> GenericResult<()>
 {
-    env_logger::init_from_env(env_logger::Env::default().default_filter_or("info"));
+    env_logger::init_from_env(env_logger::Env::default().default_filter_or("debug"));
 
     let cli = Cli::parse();
 
@@ -41,6 +47,7 @@ fn main() -> GenericResult<()>
             Config::writeu().set_server_root(&utils::get_crate_root())?;
         }
 
+        Config::writeu().http = cli.http;
         Config::writeu().port = cli.port;
 
         if cli.gen {
@@ -52,6 +59,9 @@ fn main() -> GenericResult<()>
 
     let reg = Registry::import()?;
     info!("{:#?}", &*reg);
+
+    info!("Launching the HTTP server");
+    httpd::run(reg).await;
 
     Ok(())
 }
