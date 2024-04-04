@@ -15,6 +15,7 @@ uuid = { version = "*", features = ["v4", "fast-rng", "macro-diagnostics", "serd
 log = "*"
 env_logger = "*"
 tokio = { version = "*", features = [ "full" ] }
+tokio-util = { version = "*", features = [ "io" ] }
 tower = { version = "*", features = ["util", "timeout"] }
 tower-http = { version = "*", features = ["add-extension", "trace"] }
 axum = "*"

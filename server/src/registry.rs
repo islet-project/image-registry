@@ -7,6 +7,8 @@ use std::collections::HashMap;
 use std::ops::Deref;
 use std::ops::DerefMut;
 use std::path::Path;
+use tokio::fs;
+use tokio_util::io;
 use uuid::Uuid;
 
 
@@ -98,10 +100,17 @@ impl Registry
         }
     }
 
-    pub fn get_image(&self, uuid: &Uuid) -> Option<&str>
+    pub async fn get_image(&self, uuid: &Uuid) -> Option<io::ReaderStream<fs::File>>
     {
         if self.contains_key(uuid) {
-            Some(&self.content[uuid].image)
+            let path = format!("{}/{}", Config::readu().server, &self.content[uuid].image);
+            let file = match fs::File::open(&path).await {
+                Ok(file) => file,
+                Err(_err) => return None,
+            };
+
+            let stream = io::ReaderStream::new(file);
+            Some(stream)
         } else {
             None
         }

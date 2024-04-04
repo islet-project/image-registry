@@ -1,5 +1,6 @@
 use crate::{registry::Registry, Config};
 use axum::{
+    body,
     extract, http,
     response::IntoResponse,
     routing, Json, Router,
@@ -56,9 +57,19 @@ async fn http_get(extract::Path(file): extract::Path<String>,
                 (http::StatusCode::NOT_FOUND, "Manifest not found").into_response()
             }
         },
-        "tgz" | "tar.gz" | "tbz" | "tar.bz2" | "zip" => {
-            if let Some(image) = registry.get_image(&uuid) {
-                image.to_string().into_response()
+        "tgz" => {
+            if let Some(stream) = registry.get_image(&uuid).await {
+                let body = body::Body::from_stream(stream);
+
+                let headers = [
+                    (http::header::CONTENT_TYPE, "application/octet-stream"),
+                    (
+                        http::header::CONTENT_DISPOSITION,
+                        &format!("attachment; filename=\"{}.tgz\"", uuid),
+                    ),
+                ];
+
+                (headers, body).into_response()
             } else {
                 (http::StatusCode::NOT_FOUND, "Image not found").into_response()
             }
