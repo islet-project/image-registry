@@ -14,7 +14,7 @@ use uuid::Uuid;
 pub struct Image
 {
     pub manifest: Manifest,
-    pub content: String,
+    pub image: String,
 }
 
 pub type RegistryMap = HashMap<Uuid, Image>;
@@ -29,7 +29,7 @@ pub struct Registry
 struct ImageSerialized
 {
     pub manifest: String,
-    pub content: String,
+    pub image: String,
 }
 
 impl Deref for Registry
@@ -52,7 +52,7 @@ impl Registry
 {
     fn deserialize() -> GenericResult<Vec<ImageSerialized>>
     {
-        let yaml = utils::file_read(&Config::readu().images)?;
+        let yaml = utils::file_read(&Config::readu().database)?;
         let reg: Vec<ImageSerialized> = serde_yaml::from_slice(&yaml)?;
 
         Ok(reg)
@@ -61,7 +61,7 @@ impl Registry
     fn serialize(reg: Vec<ImageSerialized>) -> GenericResult<()>
     {
         let yaml = serde_yaml::to_string(&reg)?;
-        utils::file_write(&Config::readu().images, yaml.as_bytes())?;
+        utils::file_write(&Config::readu().database, yaml.as_bytes())?;
 
         Ok(())
     }
@@ -80,13 +80,31 @@ impl Registry
             let uuid = manifest.uuid;
             let image = Image {
                 manifest,
-                content: img.content,
+                image: img.image,
             };
 
             content.insert(uuid, image);
         }
 
         Ok(Self { content })
+    }
+
+    pub fn get_manifest(&self, uuid: &Uuid) -> Option<&Manifest>
+    {
+        if self.contains_key(uuid) {
+            Some(&self.content[uuid].manifest)
+        } else {
+            None
+        }
+    }
+
+    pub fn get_image(&self, uuid: &Uuid) -> Option<&str>
+    {
+        if self.contains_key(uuid) {
+            Some(&self.content[uuid].image)
+        } else {
+            None
+        }
     }
 
     pub fn generate_example() -> GenericResult<()>
@@ -114,7 +132,7 @@ impl Registry
             utils::file_write(&format!("{}/{}.json", Config::readu().server, m.uuid), j.as_bytes())?;
             let image = ImageSerialized {
                 manifest: format!("{}.json", m.uuid),
-                content: format!("{}.tgz", m.uuid),
+                image: format!("{}.tgz", m.uuid),
             };
             vi.push(image);
         }

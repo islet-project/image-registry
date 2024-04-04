@@ -3,13 +3,13 @@
 use std::sync::{PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 pub const DEFAULT_SERVER: &str = "registry";
-pub const DEFAULT_IMAGES: &str = "images.yaml";
+pub const DEFAULT_DATABASE: &str = "database.yaml";
 
 pub struct Config
 {
     pub root: String,
     pub server: String,
-    pub images: String,
+    pub database: String,
     pub http: String,
     pub port: u16,
 
@@ -24,7 +24,7 @@ impl Config
         Config {
             root: String::new(),
             server: String::new(),
-            images: String::new(),
+            database: String::new(),
             http: String::new(),
             port: 0,
             block: (),
@@ -37,7 +37,7 @@ impl Config
         self.root = root.to_string_lossy().to_string();
         let server = root.join(DEFAULT_SERVER);
         self.server = server.to_string_lossy().to_string();
-        self.images = server.join(DEFAULT_IMAGES).to_string_lossy().to_string();
+        self.database = server.join(DEFAULT_DATABASE).to_string_lossy().to_string();
 
         Ok(())
     }

@@ -46,19 +46,23 @@ async fn http_get(extract::Path(file): extract::Path<String>,
         return NOT_FOUND.into_response();
     }
 
-    let reg = reg.read().await;
+    let uuid = Uuid::parse_str(&v[0]).unwrap_or(Uuid::default());
+    let registry = reg.read().await;
     match v[1].to_lowercase().as_str() {
         "json" => {
-            let uuid = Uuid::parse_str(&v[0]).unwrap_or(Uuid::default());
-            if !reg.contains_key(&uuid) {
-                (http::StatusCode::NOT_FOUND, "Manifest not found").into_response()
+            if let Some(manifest) = registry.get_manifest(&uuid) {
+                Json(manifest).into_response()
             } else {
-                Json(&reg[&uuid].manifest).into_response()
+                (http::StatusCode::NOT_FOUND, "Manifest not found").into_response()
             }
         },
         "tgz" | "tar.gz" | "tbz" | "tar.bz2" | "zip" => {
-            (http::StatusCode::NOT_FOUND, "Image not found").into_response()
-        }
-        _ => NOT_FOUND.into_response()
+            if let Some(image) = registry.get_image(&uuid) {
+                image.to_string().into_response()
+            } else {
+                (http::StatusCode::NOT_FOUND, "Image not found").into_response()
+            }
+        },
+        _ => NOT_FOUND.into_response(),
     }
 }
