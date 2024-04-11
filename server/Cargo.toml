@@ -19,3 +19,5 @@ tokio-util = { version = "*", features = [ "io" ] }
 tower = { version = "*", features = ["util", "timeout"] }
 tower-http = { version = "*", features = ["add-extension", "trace"] }
 axum = "*"
+async-trait = "*"
+futures-core = "*"

@@ -10,9 +10,11 @@ use std::path::Path;
 use tokio::fs;
 use tokio_util::io;
 use uuid::Uuid;
+use async_trait::async_trait;
 
 
-pub trait ImageRegistry
+#[async_trait]
+pub trait ImageRegistry: Send + Sync
 {
     fn get_manifest(&self, uuid: &Uuid) -> Option<&Manifest>;
     async fn get_image(&self, uuid: &Uuid) -> Option<io::ReaderStream<fs::File>>;
@@ -133,6 +135,7 @@ impl Registry
     }
 }
 
+#[async_trait]
 impl ImageRegistry for Registry
 {
     fn get_manifest(&self, uuid: &Uuid) -> Option<&Manifest>
@@ -153,7 +156,7 @@ impl ImageRegistry for Registry
                 Err(_err) => return None,
             };
 
-            let stream = io::ReaderStream::new(file);
+            let stream = tokio_util::io::ReaderStream::new(file);
             Some(stream)
         } else {
             None

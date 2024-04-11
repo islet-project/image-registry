@@ -1,4 +1,4 @@
-use crate::{registry::{Registry, ImageRegistry}, Config};
+use crate::{registry::ImageRegistry, Config};
 use axum::{
     body,
     extract, http,
@@ -12,12 +12,13 @@ use tower_http::trace::TraceLayer;
 use uuid::Uuid;
 
 
-type SafeReg = Arc<RwLock<Registry>>;
-
 static NOT_FOUND: (http::StatusCode, &'static str) =
     (http::StatusCode::NOT_FOUND, "In the beginning there was darkness");
 
-pub async fn run(reg: Registry)
+
+type SafeReg = Arc<RwLock<dyn ImageRegistry>>;
+
+pub async fn run<T: ImageRegistry + 'static>(reg: T)
 {
     let reg = Arc::new(RwLock::new(reg));
 
