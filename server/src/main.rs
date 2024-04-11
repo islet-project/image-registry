@@ -51,7 +51,9 @@ async fn main() -> GenericResult<()>
         Config::writeu().port = cli.port;
 
         if cli.gen {
+            info!("Generating an example image registry");
             Registry::generate_example()?;
+            return Ok(())
         }
     }
 
