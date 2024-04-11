@@ -1,6 +1,7 @@
 use client::Client;
 
 use clap::{Args, Parser, Subcommand};
+use log::info;
 
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
@@ -46,6 +47,8 @@ struct GetImageArgs {
 }
 
 fn main() {
+    env_logger::init_from_env(env_logger::Env::default().default_filter_or("debug"));
+
     let cli = Cli::parse();
 
     println!("{:?}", cli.command);
@@ -57,8 +60,7 @@ fn main() {
             let manifest = Client::new(args.host.clone())
                 .get_manifest(uuid::Uuid::parse_str(&args.uuid).unwrap())
                 .unwrap();
-
-            println!("{:?}", manifest);
+            info!("Manifest: {:?}", manifest);
         }
         Commands::GetImage(args) => {
             Client::new(args.host.clone())
@@ -67,7 +69,8 @@ fn main() {
             let image_bytes = Client::new(args.host.clone())
                 .get_image(uuid::Uuid::parse_str(&args.uuid).unwrap())
                 .unwrap();
-            println!("Image size: {}", image_bytes.len());
+
+            info!("Image size {}", image_bytes.len());
         }
     }
 }

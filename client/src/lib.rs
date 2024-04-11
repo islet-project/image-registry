@@ -2,6 +2,7 @@ mod error;
 mod service_url;
 
 use error::Error;
+use log::{debug, error, info};
 use protocol::Manifest;
 use reqwest::blocking::{Client as ReqwestClient, Response};
 use service_url::{ServiceFile, ServiceUrl};
@@ -30,7 +31,7 @@ impl Client {
 
         match response
             .json::<Manifest>()
-            .inspect_err(|e| println!("Failed  to parse JSON: {}", e))
+            .inspect_err(|e| error!("Failed  to parse JSON: {}", e))
         {
             Ok(manifest) => Ok(manifest),
             Err(err) => {
@@ -68,9 +69,18 @@ impl Client {
         // TODO: Should we check if the file is a proper JSON?
         let mut response = self
             .get_response(self.url.get_url(ServiceFile::ImageManifest(uuid))?)
-            .inspect_err(|e| println!("Failed to get response {:?}", e))?;
+            .inspect_err(|e| error!("Failed to get response {:?}", e))?;
+
+        debug!(
+            "Content type: {:?}",
+            response
+                .headers()
+                .get(reqwest::header::CONTENT_TYPE)
+                .unwrap()
+        );
 
         let filename = Self::conclude_path(ServiceFile::ImageManifest(uuid), path);
+        info!("Saving manifest to {}", filename);
         let file = File::create(filename)?;
         let mut writer = BufWriter::new(file);
 
@@ -90,9 +100,20 @@ impl Client {
     pub fn get_and_save_image(&self, uuid: Uuid, path: Option<String>) -> Result<(), Error> {
         let mut response = self
             .get_response(self.url.get_url(ServiceFile::ImageArchive(uuid))?)
-            .inspect_err(|e| println!("Failed to get response {:?}", e))?;
+            .inspect_err(|e| error!("Failed to get response: {:?}", e))?;
+        // let mut response = self.get_response(Url::parse(
+        //     "https://ftp.gnu.org/gnu/binutils/binutils-2.6-2.7.patch.gz").unwrap())?;
+
+        debug!(
+            "Content type: {:?}",
+            response
+                .headers()
+                .get(reqwest::header::CONTENT_TYPE)
+                .unwrap()
+        );
 
         let filename = Self::conclude_path(ServiceFile::ImageArchive(uuid), path);
+        info!("Saving image to {}", filename);
         let file = File::create(filename)?;
         let mut writer = BufWriter::new(file);
 
@@ -111,11 +132,12 @@ impl Client {
     }
 
     fn get_response(&self, url: Url) -> Result<Response, Error> {
+        info!("Fetching response from {}", url);
         match self
             .reqwest_client
             .get(url)
             .send()
-            .inspect_err(|e| println!("Failed to send request: {}", e))
+            .inspect_err(|e| error!("Failed to send request: {}", e))
         {
             Ok(response) => {
                 if response.status().is_success() {
