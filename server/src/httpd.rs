@@ -1,4 +1,4 @@
-use crate::{registry::Registry, Config};
+use crate::{registry::{Registry, ImageRegistry}, Config};
 use axum::{
     body,
     extract, http,

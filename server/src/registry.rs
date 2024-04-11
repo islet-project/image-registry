@@ -12,6 +12,12 @@ use tokio_util::io;
 use uuid::Uuid;
 
 
+pub trait ImageRegistry
+{
+    fn get_manifest(&self, uuid: &Uuid) -> Option<&Manifest>;
+    async fn get_image(&self, uuid: &Uuid) -> Option<io::ReaderStream<fs::File>>;
+}
+
 #[derive(Debug)]
 pub struct Image
 {
@@ -21,17 +27,17 @@ pub struct Image
 
 pub type RegistryMap = HashMap<Uuid, Image>;
 
-#[derive(Debug)]
-pub struct Registry
-{
-    content: RegistryMap,
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 struct ImageSerialized
 {
     pub manifest: String,
     pub image: String,
+}
+
+#[derive(Debug)]
+pub struct Registry
+{
+    content: RegistryMap,
 }
 
 impl Deref for Registry
@@ -91,31 +97,6 @@ impl Registry
         Ok(Self { content })
     }
 
-    pub fn get_manifest(&self, uuid: &Uuid) -> Option<&Manifest>
-    {
-        if self.contains_key(uuid) {
-            Some(&self.content[uuid].manifest)
-        } else {
-            None
-        }
-    }
-
-    pub async fn get_image(&self, uuid: &Uuid) -> Option<io::ReaderStream<fs::File>>
-    {
-        if self.contains_key(uuid) {
-            let path = format!("{}/{}", Config::readu().server, &self.content[uuid].image);
-            let file = match fs::File::open(&path).await {
-                Ok(file) => file,
-                Err(_err) => return None,
-            };
-
-            let stream = io::ReaderStream::new(file);
-            Some(stream)
-        } else {
-            None
-        }
-    }
-
     pub fn generate_example() -> GenericResult<()>
     {
         let server = Config::readu().server.clone();
@@ -149,5 +130,33 @@ impl Registry
         Registry::serialize(vi)?;
 
         Ok(())
+    }
+}
+
+impl ImageRegistry for Registry
+{
+    fn get_manifest(&self, uuid: &Uuid) -> Option<&Manifest>
+    {
+        if self.contains_key(uuid) {
+            Some(&self.content[uuid].manifest)
+        } else {
+            None
+        }
+    }
+
+    async fn get_image(&self, uuid: &Uuid) -> Option<io::ReaderStream<fs::File>>
+    {
+        if self.contains_key(uuid) {
+            let path = format!("{}/{}", Config::readu().server, &self.content[uuid].image);
+            let file = match fs::File::open(&path).await {
+                Ok(file) => file,
+                Err(_err) => return None,
+            };
+
+            let stream = io::ReaderStream::new(file);
+            Some(stream)
+        } else {
+            None
+        }
     }
 }
