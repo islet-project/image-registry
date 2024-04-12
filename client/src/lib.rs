@@ -1,4 +1,6 @@
-mod error;
+pub mod async_client;
+pub mod error;
+
 mod service_url;
 
 use error::Error;
@@ -45,39 +47,9 @@ impl Client {
     }
 
     pub fn get_and_save_manifest(&self, uuid: Uuid, path: Option<String>) -> Result<(), Error> {
-        // let manifest = self.get_manifest(uuid)?;
-
-        // let filename = Self::conclude_path(ServiceFile::IMAGE_MANIFEST(uuid), path);
-
-        // let file = File::create(filename)?;
-        // let mut writer = BufWriter::new(file);
-        // match serde_json::to_writer(&mut writer, &manifest) {
-        //     Ok(()) => Ok(()),
-        //     Err(e) => {
-        //         if e.is_data() || e.is_syntax() {
-        //             // This should not happen, as self.get_manifest() deserializes
-        //             // manifest from proper JSON.
-        //             Err(Error::JSONParsingError(e.to_string()))
-        //         } else if let Some(io_error_kind) = e.io_error_kind() {
-        //             Err(Error::IOError(IOError::from(io_error_kind)))
-        //         } else {
-        //             Err(Error::UnknownError)
-        //         }
-        //     }
-        // }
-
-        // TODO: Should we check if the file is a proper JSON?
         let mut response = self
             .get_response(self.url.get_url(ServiceFile::ImageManifest(uuid))?)
             .inspect_err(|e| error!("Failed to get response {:?}", e))?;
-
-        debug!(
-            "Content type: {:?}",
-            response
-                .headers()
-                .get(reqwest::header::CONTENT_TYPE)
-                .unwrap()
-        );
 
         let filename = Self::conclude_path(ServiceFile::ImageManifest(uuid), path);
         info!("Saving manifest to {}", filename);
@@ -103,14 +75,6 @@ impl Client {
             .inspect_err(|e| error!("Failed to get response: {:?}", e))?;
         // let mut response = self.get_response(Url::parse(
         //     "https://ftp.gnu.org/gnu/binutils/binutils-2.6-2.7.patch.gz").unwrap())?;
-
-        debug!(
-            "Content type: {:?}",
-            response
-                .headers()
-                .get(reqwest::header::CONTENT_TYPE)
-                .unwrap()
-        );
 
         let filename = Self::conclude_path(ServiceFile::ImageArchive(uuid), path);
         info!("Saving image to {}", filename);
@@ -141,6 +105,14 @@ impl Client {
         {
             Ok(response) => {
                 if response.status().is_success() {
+                    debug!(
+                        "Content type: {:?}",
+                        response
+                            .headers()
+                            .get(reqwest::header::CONTENT_TYPE)
+                            .unwrap()
+                    );
+
                     Ok(response)
                 } else {
                     Err(Error::StatusError(response.status().as_u16()))
