@@ -60,7 +60,7 @@ async fn main() -> GenericResult<()>
     info!("Server root: {}", Config::readu().root);
 
     let reg = Registry::import()?;
-    info!("{:#?}", &*reg);
+    info!("{:?}", reg);
 
     info!("Launching the HTTP server");
     httpd::run(reg).await?;
