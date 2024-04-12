@@ -1,10 +1,11 @@
-use crate::{registry::ImageRegistry, Config};
+use crate::{registry::ImageRegistry, Config, GenericResult};
 use axum::{
     body,
     extract, http,
     response::IntoResponse,
     routing, Json, Router,
 };
+use log::info;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tower::ServiceBuilder;
@@ -18,7 +19,7 @@ static NOT_FOUND: (http::StatusCode, &'static str) =
 
 type SafeReg = Arc<RwLock<dyn ImageRegistry>>;
 
-pub async fn run<T: ImageRegistry + 'static>(reg: T)
+pub async fn run<T: ImageRegistry + 'static>(reg: T) -> GenericResult<()>
 {
     let reg = Arc::new(RwLock::new(reg));
 
@@ -30,8 +31,10 @@ pub async fn run<T: ImageRegistry + 'static>(reg: T)
         .layer(ServiceBuilder::new().layer(TraceLayer::new_for_http()));
 
     let address = format!("0.0.0.0:{}", Config::readu().port);
-    let listener = tokio::net::TcpListener::bind(address).await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(address).await?;
+    axum::serve(listener, app).await?;
+
+    Ok(())
 }
 
 async fn fallback() -> (http::StatusCode, &'static str)
@@ -53,12 +56,14 @@ async fn http_get(extract::Path(file): extract::Path<String>,
     match v[1].to_lowercase().as_str() {
         "json" => {
             if let Some(manifest) = registry.get_manifest(&uuid) {
+                info!("Manifest for {} found and served", uuid);
                 Json(manifest).into_response()
             } else {
+                info!("Manifest for {} not found", uuid);
                 (http::StatusCode::NOT_FOUND, "Manifest not found").into_response()
             }
         },
-        "tgz" => {
+        ext @ "tgz" => {
             if let Some(stream) = registry.get_image(&uuid).await {
                 let body = body::Body::from_stream(stream);
 
@@ -66,12 +71,14 @@ async fn http_get(extract::Path(file): extract::Path<String>,
                     (http::header::CONTENT_TYPE, "application/octet-stream"),
                     (
                         http::header::CONTENT_DISPOSITION,
-                        &format!("attachment; filename=\"{}.tgz\"", uuid),
+                        &format!("attachment; filename=\"{}.{}\"", uuid, ext),
                     ),
                 ];
 
+                info!("Image for {} found and served", uuid);
                 (headers, body).into_response()
             } else {
+                info!("Image for {} not found", uuid);
                 (http::StatusCode::NOT_FOUND, "Image not found").into_response()
             }
         },

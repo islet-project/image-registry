@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::utils;
 use crate::GenericResult;
+use log::error;
 use protocol::{Manifest, MediaType};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -153,7 +154,10 @@ impl ImageRegistry for Registry
             let path = format!("{}/{}", Config::readu().server, &self.content[uuid].image);
             let file = match fs::File::open(&path).await {
                 Ok(file) => file,
-                Err(_err) => return None,
+                Err(err) => {
+                    error!("Error opening file for {}: {}", uuid, err);
+                    return None;
+                },
             };
 
             let stream = tokio_util::io::ReaderStream::new(file);

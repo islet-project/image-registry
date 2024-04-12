@@ -63,7 +63,7 @@ async fn main() -> GenericResult<()>
     info!("{:#?}", &*reg);
 
     info!("Launching the HTTP server");
-    httpd::run(reg).await;
+    httpd::run(reg).await?;
 
     Ok(())
 }

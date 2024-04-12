@@ -60,7 +60,7 @@ impl Config
         static mut CONFIG: Option<RwLock<Config>> = None;
 
         unsafe {
-            if let None = &CONFIG {
+            if let None = *std::ptr::addr_of!(CONFIG) {
                 CONFIG.replace(RwLock::new(Config::new()));
             }
 
