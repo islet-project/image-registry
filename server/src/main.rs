@@ -10,7 +10,6 @@ use registry::Registry;
 
 type GenericResult<T> = Result<T, Box<dyn std::error::Error>>;
 
-
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
 struct Cli
@@ -53,7 +52,7 @@ async fn main() -> GenericResult<()>
         if cli.gen {
             info!("Generating an example image registry");
             Registry::generate_example()?;
-            return Ok(())
+            return Ok(());
         }
     }
 

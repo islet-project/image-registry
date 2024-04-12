@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::utils;
 use crate::GenericResult;
+use async_trait::async_trait;
 use log::error;
 use protocol::{Manifest, MediaType};
 use serde::{Deserialize, Serialize};
@@ -11,8 +12,6 @@ use std::path::Path;
 use tokio::fs;
 use tokio_util::io;
 use uuid::Uuid;
-use async_trait::async_trait;
-
 
 #[async_trait]
 pub trait ImageRegistry: Send + Sync
@@ -47,14 +46,16 @@ impl Deref for Registry
 {
     type Target = RegistryMap;
 
-    fn deref(&self) -> &Self::Target {
+    fn deref(&self) -> &Self::Target
+    {
         &self.content
     }
 }
 
 impl DerefMut for Registry
 {
-    fn deref_mut(&mut self) -> &mut Self::Target {
+    fn deref_mut(&mut self) -> &mut Self::Target
+    {
         &mut self.content
     }
 }
@@ -111,7 +112,8 @@ impl Registry
 
         let mut vm = Vec::new();
         for name in ["application1", "application2", "application3"] {
-            let manifest = Manifest::new(name.to_string(), "Samsung".to_string(), MediaType::Docker);
+            let manifest =
+                Manifest::new(name.to_string(), "Samsung".to_string(), MediaType::Docker);
             vm.push(manifest);
         }
 
@@ -122,7 +124,10 @@ impl Registry
 
         let mut vi = Vec::new();
         for (m, j) in std::iter::zip(vm, vj) {
-            utils::file_write(&format!("{}/{}.json", Config::readu().server, m.uuid), j.as_bytes())?;
+            utils::file_write(
+                &format!("{}/{}.json", Config::readu().server, m.uuid),
+                j.as_bytes(),
+            )?;
             let image = ImageSerialized {
                 manifest: format!("{}.json", m.uuid),
                 image: format!("{}.tgz", m.uuid),
@@ -157,7 +162,7 @@ impl ImageRegistry for Registry
                 Err(err) => {
                     error!("Error opening file for {}: {}", uuid, err);
                     return None;
-                },
+                }
             };
 
             let stream = tokio_util::io::ReaderStream::new(file);
