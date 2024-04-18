@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 protocol = { path = "../protocol" }
 uuid = { version = "*", features = ["v4", "fast-rng", "macro-diagnostics", "serde"] }
-reqwest = { version = "*", features = ["blocking", "json", "stream"] }
+reqwest = { version = "*", default-features = false, features = ["blocking", "json", "stream", "rustls-tls"] }
 url = "*"
 clap = { version = "*", features = ["derive"] }
 serde_json = "*"
