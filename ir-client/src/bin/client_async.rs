@@ -1,7 +1,8 @@
-use client::Client;
+use ir_client::async_client::Client;
 
 use clap::{Args, Parser, Subcommand};
 use log::info;
+use tokio::io::AsyncReadExt;
 
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
@@ -46,7 +47,8 @@ struct GetImageArgs {
     out: Option<String>,
 }
 
-fn main() {
+#[tokio::main]
+async fn main() -> () {
     env_logger::init_from_env(env_logger::Env::default().default_filter_or("debug"));
 
     let cli = Cli::parse();
@@ -54,23 +56,21 @@ fn main() {
     println!("{:?}", cli.command);
     match &cli.command {
         Commands::GetManifest(args) => {
-            Client::new(args.host.clone())
-                .get_and_save_manifest(uuid::Uuid::parse_str(&args.uuid).unwrap(), args.out.clone())
-                .unwrap();
             let manifest = Client::new(args.host.clone())
                 .get_manifest(uuid::Uuid::parse_str(&args.uuid).unwrap())
+                .await
                 .unwrap();
             info!("Manifest: {:?}", manifest);
         }
         Commands::GetImage(args) => {
-            Client::new(args.host.clone())
-                .get_and_save_image(uuid::Uuid::parse_str(&args.uuid).unwrap(), args.out.clone())
-                .unwrap();
-            let image_bytes = Client::new(args.host.clone())
-                .get_image(uuid::Uuid::parse_str(&args.uuid).unwrap())
+            let mut image_bytes = Client::new(args.host.clone())
+                .get_image_stream(uuid::Uuid::parse_str(&args.uuid).unwrap())
+                .await
                 .unwrap();
 
-            info!("Image size {}", image_bytes.len());
+            let mut buf = Vec::new();
+            image_bytes.read_to_end(&mut buf).await.unwrap();
+            info!("Image size {}", buf.len());
         }
     }
 }

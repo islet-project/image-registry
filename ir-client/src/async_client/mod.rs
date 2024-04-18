@@ -4,7 +4,7 @@ use crate::{
 };
 use futures::stream::TryStreamExt;
 use log::{debug, error, info};
-use protocol::Manifest;
+use ir_protocol::Manifest;
 use reqwest::{Client as ReqwestClient, Response};
 use url::Url;
 use uuid::Uuid;

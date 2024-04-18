@@ -2,7 +2,7 @@
 resolver = "2"
 
 members = [
-    "protocol",
-    "server",
-    "client",
+    "ir-protocol",
+    "ir-server",
+    "ir-client",
 ]

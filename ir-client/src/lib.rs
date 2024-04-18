@@ -5,7 +5,7 @@ mod service_url;
 
 use error::Error;
 use log::{debug, error, info};
-use protocol::Manifest;
+use ir_protocol::Manifest;
 use reqwest::blocking::{Client as ReqwestClient, Response};
 use service_url::{ServiceFile, ServiceUrl};
 use std::fs::File;

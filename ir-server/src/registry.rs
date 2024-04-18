@@ -3,7 +3,7 @@ use crate::utils;
 use crate::GenericResult;
 use async_trait::async_trait;
 use log::error;
-use protocol::{Manifest, MediaType};
+use ir_protocol::{Manifest, MediaType};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::ops::Deref;

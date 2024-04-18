@@ -1,12 +1,12 @@
 [package]
-name = "client"
+name = "ir-client"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-protocol = { path = "../protocol" }
+ir-protocol = { path = "../ir-protocol" }
 uuid = { version = "*", features = ["v4", "fast-rng", "macro-diagnostics", "serde"] }
 reqwest = { version = "*", default-features = false, features = ["blocking", "json", "stream", "rustls-tls"] }
 url = "*"

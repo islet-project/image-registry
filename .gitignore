@@ -1,2 +1,3 @@
 /target
+/ir-server/registry
 Cargo.lock
