@@ -21,3 +21,5 @@ tower-http = { version = "*", features = ["add-extension", "trace"] }
 axum = "*"
 async-trait = "*"
 futures-core = "*"
+tokio-rustls = "*"
+rustls-pemfile = "1.*"

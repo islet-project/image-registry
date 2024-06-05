@@ -1,6 +1,5 @@
 use crate::config::Config;
 use crate::utils;
-use crate::GenericResult;
 use async_trait::async_trait;
 use ir_protocol::{Manifest, MediaType};
 use log::error;
@@ -12,6 +11,8 @@ use std::path::Path;
 use tokio::fs;
 use tokio_util::io;
 use uuid::Uuid;
+
+use crate::RegistryResult;
 
 #[async_trait]
 pub trait ImageRegistry: Send + Sync
@@ -62,7 +63,7 @@ impl DerefMut for Registry
 
 impl Registry
 {
-    fn deserialize() -> GenericResult<Vec<ImageSerialized>>
+    fn deserialize() -> RegistryResult<Vec<ImageSerialized>>
     {
         let yaml = utils::file_read(&Config::readu().database)?;
         let reg: Vec<ImageSerialized> = serde_yaml::from_slice(&yaml)?;
@@ -70,7 +71,7 @@ impl Registry
         Ok(reg)
     }
 
-    fn serialize(reg: Vec<ImageSerialized>) -> GenericResult<()>
+    fn serialize(reg: Vec<ImageSerialized>) -> RegistryResult<()>
     {
         let yaml = serde_yaml::to_string(&reg)?;
         utils::file_write(&Config::readu().database, yaml.as_bytes())?;
@@ -79,7 +80,7 @@ impl Registry
     }
 
     // read the yaml, load json manifests and construct uuid keyed hashmap
-    pub fn import() -> GenericResult<Self>
+    pub fn import() -> RegistryResult<Self>
     {
         let reg = Registry::deserialize()?;
 
@@ -101,7 +102,7 @@ impl Registry
         Ok(Self { content })
     }
 
-    pub fn generate_example() -> GenericResult<()>
+    pub fn generate_example() -> RegistryResult<()>
     {
         let server = Config::readu().server.clone();
         let path = Path::new(&server);

@@ -1,4 +1,5 @@
 mod config;
+mod error;
 mod httpd;
 mod registry;
 mod utils;
@@ -8,7 +9,7 @@ use config::Config;
 use log::info;
 use registry::Registry;
 
-type GenericResult<T> = Result<T, Box<dyn std::error::Error>>;
+type RegistryResult<T> = Result<T, error::RegistryError>;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
@@ -28,7 +29,7 @@ struct Cli
 }
 
 #[tokio::main]
-async fn main() -> GenericResult<()>
+async fn main() -> RegistryResult<()>
 {
     env_logger::init_from_env(env_logger::Env::default().default_filter_or("debug"));
 

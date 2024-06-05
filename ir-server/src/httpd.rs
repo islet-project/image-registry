@@ -1,4 +1,4 @@
-use crate::{registry::ImageRegistry, Config, GenericResult};
+use crate::{registry::ImageRegistry, Config, RegistryResult};
 use axum::{body, extract, http, response::IntoResponse, routing, Json, Router};
 use log::info;
 use std::sync::Arc;
@@ -14,7 +14,7 @@ static NOT_FOUND: (http::StatusCode, &'static str) = (
 
 type SafeReg = Arc<RwLock<dyn ImageRegistry>>;
 
-pub async fn run<T: ImageRegistry + 'static>(reg: T) -> GenericResult<()>
+pub async fn run<T: ImageRegistry + 'static>(reg: T) -> RegistryResult<()>
 {
     let reg = Arc::new(RwLock::new(reg));
 
