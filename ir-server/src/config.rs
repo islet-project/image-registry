@@ -7,7 +7,6 @@ pub const DEFAULT_DATABASE: &str = "database.yaml";
 
 pub struct Config
 {
-    pub root: String,
     pub server: String,
     pub database: String,
     pub port: u16,
@@ -21,7 +20,6 @@ impl Config
     fn new() -> Self
     {
         Config {
-            root: String::new(),
             server: String::new(),
             database: String::new(),
             port: 0,
@@ -29,11 +27,14 @@ impl Config
         }
     }
 
-    pub fn set_server_root(&mut self, root: &str) -> std::io::Result<()>
+    pub fn set_server_root(&mut self, root: &str, subdir: bool) -> std::io::Result<()>
     {
-        let root = std::fs::canonicalize(root)?;
-        self.root = root.to_string_lossy().to_string();
-        let server = root.join(DEFAULT_SERVER);
+        let base = std::fs::canonicalize(root)?;
+        let server = if subdir {
+            base.join(DEFAULT_SERVER)
+        } else {
+            base
+        };
         self.server = server.to_string_lossy().to_string();
         self.database = server.join(DEFAULT_DATABASE).to_string_lossy().to_string();
 

@@ -37,9 +37,9 @@ async fn main() -> GenericResult<()>
     // handle cmd line option, initialize and setup the config singleton
     {
         if let Some(root) = cli.root {
-            Config::writeu().set_server_root(&root)?;
+            Config::writeu().set_server_root(&root, false)?;
         } else {
-            Config::writeu().set_server_root(&utils::get_crate_root())?;
+            Config::writeu().set_server_root(&utils::get_crate_root(), true)?;
         }
 
         Config::writeu().port = cli.port;
@@ -51,7 +51,7 @@ async fn main() -> GenericResult<()>
         }
     }
 
-    info!("Server root: {}", Config::readu().root);
+    info!("Server root: {}", Config::readu().server);
 
     let reg = Registry::import()?;
     info!("{:?}", reg);
