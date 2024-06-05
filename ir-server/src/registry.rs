@@ -1,5 +1,3 @@
-use crate::config::Config;
-use crate::utils;
 use async_trait::async_trait;
 use ir_protocol::{Manifest, MediaType};
 use log::error;
@@ -12,6 +10,8 @@ use tokio::fs;
 use tokio_util::io;
 use uuid::Uuid;
 
+use crate::config::Config;
+use crate::utils;
 use crate::RegistryResult;
 
 #[async_trait]
@@ -87,7 +87,7 @@ impl Registry
         let mut content = RegistryMap::new();
 
         for img in reg {
-            let path = format!("{}/{}", Config::readu().server, img.manifest);
+            let path = format!("{}/{}", Config::readu().root, img.manifest);
             let json = utils::file_read(&path)?;
             let manifest: Manifest = serde_json::from_slice(&json)?;
             let uuid = manifest.uuid;
@@ -104,7 +104,7 @@ impl Registry
 
     pub fn generate_example() -> RegistryResult<()>
     {
-        let server = Config::readu().server.clone();
+        let server = Config::readu().root.clone();
         let path = Path::new(&server);
         if path.exists() {
             std::fs::remove_dir_all(path)?;
@@ -126,7 +126,7 @@ impl Registry
         let mut vi = Vec::new();
         for (m, j) in std::iter::zip(vm, vj) {
             utils::file_write(
-                &format!("{}/{}.json", Config::readu().server, m.uuid),
+                &format!("{}/{}.json", Config::readu().root, m.uuid),
                 j.as_bytes(),
             )?;
             let image = ImageSerialized {
@@ -157,7 +157,7 @@ impl ImageRegistry for Registry
     async fn get_image(&self, uuid: &Uuid) -> Option<io::ReaderStream<fs::File>>
     {
         if self.contains_key(uuid) {
-            let path = format!("{}/{}", Config::readu().server, &self.content[uuid].image);
+            let path = format!("{}/{}", Config::readu().root, &self.content[uuid].image);
             let file = match fs::File::open(&path).await {
                 Ok(file) => file,
                 Err(err) => {

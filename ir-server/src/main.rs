@@ -2,6 +2,7 @@ mod config;
 mod error;
 mod httpd;
 mod registry;
+mod tls;
 mod utils;
 
 use clap::Parser;
@@ -19,6 +20,18 @@ struct Cli
     #[arg(short, long)]
     root: Option<String>,
 
+    /// path to server certificate, none to use {crate_root}/certs/server.crt
+    #[arg(short, long)]
+    cert: Option<String>,
+
+    /// path to server private key, none to use {crate_root}/certs/server.key
+    #[arg(short, long)]
+    key: Option<String>,
+
+    /// TLS variant to use
+    #[arg(short, long, default_value_t, value_enum)]
+    tls: config::Protocol,
+
     /// server port
     #[arg(short, long, default_value_t = 8888)]
     port: u16,
@@ -35,29 +48,32 @@ async fn main() -> RegistryResult<()>
 
     let cli = Cli::parse();
 
-    // handle cmd line option, initialize and setup the config singleton
+    // initialize and setup the config singleton
     {
-        if let Some(root) = cli.root {
-            Config::writeu().set_server_root(&root, false)?;
-        } else {
-            Config::writeu().set_server_root(&utils::get_crate_root(), true)?;
-        }
+        let mut config = Config::writeu();
 
-        Config::writeu().port = cli.port;
+        config.set_server_root(cli.root.as_deref())?;
+        config.set_server_cert(cli.cert.as_deref())?;
+        config.set_server_key(cli.key.as_deref())?;
 
-        if cli.gen {
-            info!("Generating an example image registry");
-            Registry::generate_example()?;
-            return Ok(());
-        }
+        config.port = cli.port;
+        config.proto = cli.tls;
     }
 
-    info!("Server root: {}", Config::readu().server);
+    if cli.gen {
+        info!("Generating an example image registry");
+        Registry::generate_example()?;
+        return Ok(());
+    }
+
+    info!("Server root: {}", Config::readu().root);
+    info!("Server certificates: {}", Config::readu().cert);
+    info!("Server private key: {}", Config::readu().key);
 
     let reg = Registry::import()?;
     info!("{:?}", reg);
 
-    info!("Launching the HTTP server");
+    info!("Launching the HTTP(S) server");
     httpd::run(reg).await?;
 
     Ok(())

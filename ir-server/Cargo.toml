@@ -14,12 +14,17 @@ serde_yaml = "*"
 uuid = { version = "*", features = ["v4", "fast-rng", "macro-diagnostics", "serde"] }
 log = "*"
 env_logger = "*"
+futures-core = "*"
+futures-util = { version = "*", default-features = false }
+rustls-pemfile = "1.*"
 tokio = { version = "*", features = [ "full" ] }
 tokio-util = { version = "*", features = [ "io" ] }
-tower = { version = "*", features = ["util", "timeout"] }
+# TODO: some tokio_rustls::rustls::* re-export issues here
+tokio-rustls = "0.24.*"
+hyper = { version = "*", features = ["full"] }
+hyper-util = "*"
+tower = { version = "*", features = ["make", "util", "timeout"] }
 tower-http = { version = "*", features = ["add-extension", "trace"] }
+tower-service = "*"
 axum = "*"
 async-trait = "*"
-futures-core = "*"
-tokio-rustls = "*"
-rustls-pemfile = "1.*"

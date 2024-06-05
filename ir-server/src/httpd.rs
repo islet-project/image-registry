@@ -1,4 +1,3 @@
-use crate::{registry::ImageRegistry, Config, RegistryResult};
 use axum::{body, extract, http, response::IntoResponse, routing, Json, Router};
 use log::info;
 use std::sync::Arc;
@@ -6,6 +5,11 @@ use tokio::sync::RwLock;
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
 use uuid::Uuid;
+
+use crate::config::{Config, Protocol};
+use crate::registry::ImageRegistry;
+use crate::tls;
+use crate::RegistryResult;
 
 static NOT_FOUND: (http::StatusCode, &'static str) = (
     http::StatusCode::NOT_FOUND,
@@ -35,7 +39,12 @@ pub async fn run<T: ImageRegistry + 'static>(reg: T) -> RegistryResult<()>
 
     let address = format!("0.0.0.0:{}", Config::readu().port);
     let listener = tokio::net::TcpListener::bind(address).await?;
-    axum::serve(listener, app).await?;
+
+    match Config::readu().proto {
+        Protocol::NoTls => axum::serve(listener, app).await?,
+        Protocol::Tls => tls::serve(listener, app).await?,
+        Protocol::RaTls => panic!("RA-TLS NOT IMPLEMENTED"),
+    }
 
     Ok(())
 }
@@ -45,16 +54,19 @@ async fn fallback() -> (http::StatusCode, &'static str)
     NOT_FOUND
 }
 
+#[allow(dead_code)]
 async fn get_support(extract::State(_reg): extract::State<SafeReg>) -> impl IntoResponse
 {
     (http::StatusCode::NOT_IMPLEMENTED, "NI: GET support").into_response()
 }
 
+#[allow(dead_code)]
 async fn get_tags(extract::State(_reg): extract::State<SafeReg>) -> impl IntoResponse
 {
     (http::StatusCode::NOT_IMPLEMENTED, "NI: GET tags").into_response()
 }
 
+#[allow(dead_code)]
 async fn get_manifest(
     extract::State(_reg): extract::State<SafeReg>,
     extract::Path((name, reference)): extract::Path<(String, String)>,
@@ -64,6 +76,7 @@ async fn get_manifest(
     (http::StatusCode::NOT_IMPLEMENTED, msg).into_response()
 }
 
+#[allow(dead_code)]
 async fn post_manifest(
     extract::State(_reg): extract::State<SafeReg>,
     extract::Path((name, reference)): extract::Path<(String, String)>,
@@ -73,6 +86,7 @@ async fn post_manifest(
     (http::StatusCode::NOT_IMPLEMENTED, msg).into_response()
 }
 
+#[allow(dead_code)]
 async fn get_blob(
     extract::State(_reg): extract::State<SafeReg>,
     extract::Path((name, digest)): extract::Path<(String, String)>,
@@ -82,6 +96,7 @@ async fn get_blob(
     (http::StatusCode::NOT_IMPLEMENTED, msg).into_response()
 }
 
+#[allow(dead_code)]
 async fn post_blob(
     extract::State(_reg): extract::State<SafeReg>,
     extract::Path((name, digest)): extract::Path<(String, String)>,
