@@ -10,7 +10,6 @@ pub struct Config
     pub root: String,
     pub server: String,
     pub database: String,
-    pub http: String,
     pub port: u16,
 
     #[allow(dead_code)]
@@ -25,7 +24,6 @@ impl Config
             root: String::new(),
             server: String::new(),
             database: String::new(),
-            http: String::new(),
             port: 0,
             block: (),
         }

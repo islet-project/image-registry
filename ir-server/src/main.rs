@@ -18,10 +18,6 @@ struct Cli
     #[arg(short, long)]
     root: Option<String>,
 
-    /// runtime server http root
-    #[arg(short = 't', long, default_value_t = String::from("image"))]
-    http: String,
-
     /// server port
     #[arg(short, long, default_value_t = 8888)]
     port: u16,
@@ -46,7 +42,6 @@ async fn main() -> GenericResult<()>
             Config::writeu().set_server_root(&utils::get_crate_root())?;
         }
 
-        Config::writeu().http = cli.http;
         Config::writeu().port = cli.port;
 
         if cli.gen {
