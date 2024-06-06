@@ -23,16 +23,7 @@ pub async fn run<T: ImageRegistry + 'static>(reg: T) -> RegistryResult<()>
     let reg = Arc::new(RwLock::new(reg));
 
     let app = Router::new()
-        .route("/v2", routing::get(get_support))
-        .route("/v2/:name/tags/list", routing::get(get_tags))
-        .route(
-            "/v2/:name/manifests/:reference",
-            routing::get(get_manifest).post(post_manifest),
-        )
-        .route(
-            "/v2/:name/blobs/:digest",
-            routing::get(get_blob).post(post_blob),
-        )
+        .route("/image/*file", routing::get(http_get))
         .with_state(reg)
         .fallback(fallback)
         .layer(ServiceBuilder::new().layer(TraceLayer::new_for_http()));
