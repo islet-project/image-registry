@@ -40,7 +40,7 @@ pub async fn run<T: ImageRegistry + 'static>(reg: T) -> RegistryResult<()>
     let address = format!("0.0.0.0:{}", Config::readu().port);
     let listener = tokio::net::TcpListener::bind(address).await?;
 
-    match Config::readu().proto {
+    match Config::readu().tls {
         Protocol::NoTls => axum::serve(listener, app).await?,
         Protocol::Tls => tls::serve(listener, app).await?,
         Protocol::RaTls => panic!("RA-TLS NOT IMPLEMENTED"),

@@ -6,9 +6,11 @@ use std::sync::{PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use crate::utils;
 
 pub const DEFAULT_SERVER: &str = "registry";
+pub const DEFAULT_DATABASE: &str = "database.yaml";
 pub const DEFAULT_CERT: &str = "certs/server.crt";
 pub const DEFAULT_KEY: &str = "certs/server.key";
-pub const DEFAULT_DATABASE: &str = "database.yaml";
+pub const DEFAULT_RATLS_VERAISON_KEY: &str = "ratls/pkey.jwk";
+pub const DEFAULT_RATLS_REFERENCE_JSON: &str = "ratls/example.json";
 
 #[derive(clap::ValueEnum, Clone, Default, Debug)]
 pub enum Protocol
@@ -22,11 +24,14 @@ pub enum Protocol
 pub struct Config
 {
     pub root: String,
+    pub database: String,
     pub cert: String,
     pub key: String,
-    pub database: String,
+    pub tls: Protocol,
     pub port: u16,
-    pub proto: Protocol,
+    pub veraison_url: String,
+    pub veraison_pubkey: String,
+    pub reference_json: String,
 
     #[allow(dead_code)]
     block: (),
@@ -38,11 +43,14 @@ impl Config
     {
         Config {
             root: String::new(),
+            database: String::new(),
             cert: String::new(),
             key: String::new(),
-            database: String::new(),
+            tls: Protocol::default(),
             port: 0,
-            proto: Protocol::default(),
+            veraison_url: String::new(),
+            veraison_pubkey: String::new(),
+            reference_json: String::new(),
             block: (),
         }
     }
@@ -77,6 +85,28 @@ impl Config
             None => fs::canonicalize(&utils::get_crate_root())?.join(DEFAULT_KEY),
         };
         self.key = base.to_string_lossy().to_string();
+
+        Ok(())
+    }
+
+    pub fn set_veraison_key(&mut self, key: Option<&str>) -> std::io::Result<()>
+    {
+        let base = match key {
+            Some(k) => fs::canonicalize(k)?,
+            None => fs::canonicalize(&utils::get_crate_root())?.join(DEFAULT_RATLS_VERAISON_KEY),
+        };
+        self.veraison_pubkey = base.to_string_lossy().to_string();
+
+        Ok(())
+    }
+
+    pub fn set_reference_json(&mut self, key: Option<&str>) -> std::io::Result<()>
+    {
+        let base = match key {
+            Some(rj) => fs::canonicalize(rj)?,
+            None => fs::canonicalize(&utils::get_crate_root())?.join(DEFAULT_RATLS_REFERENCE_JSON),
+        };
+        self.reference_json = base.to_string_lossy().to_string();
 
         Ok(())
     }
