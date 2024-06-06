@@ -16,11 +16,10 @@ log = "*"
 env_logger = "*"
 futures-core = "*"
 futures-util = { version = "*", default-features = false }
-rustls-pemfile = "1.*"
+rustls-pemfile = "*"
 tokio = { version = "*", features = [ "full" ] }
 tokio-util = { version = "*", features = [ "io" ] }
-# TODO: some tokio_rustls::rustls::* re-export issues here
-tokio-rustls = "0.24.*"
+tokio-rustls = "^0.26"
 hyper = { version = "*", features = ["full"] }
 hyper-util = "*"
 tower = { version = "*", features = ["make", "util", "timeout"] }

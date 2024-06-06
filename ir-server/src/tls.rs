@@ -15,7 +15,6 @@ use crate::RegistryResult;
 fn tls_server_config() -> RegistryResult<Arc<ServerConfig>>
 {
     let config = ServerConfig::builder()
-        .with_safe_defaults()
         .with_no_client_auth()
         .with_single_cert(
             utils::load_certificates_from_pem(&Config::readu().cert)?,
