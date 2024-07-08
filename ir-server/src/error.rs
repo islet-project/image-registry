@@ -14,7 +14,16 @@ impl std::fmt::Display for RegistryError
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
     {
-        write!(f, "RaTlsError")
+        match self {
+            RegistryError::IOError(e) => write!(f, "IOError({:?})", e),
+            RegistryError::RustlsError(e) => write!(f, "RustlsError({:?})", e),
+            RegistryError::SerdeYamlError(e) => write!(f, "SerdeYamlError({:?})", e),
+            RegistryError::SerdeJsonError(e) => write!(f, "SerdeJsonError({:?})", e),
+            RegistryError::PrivateKeyParsingError(s) => write!(f, "PrivateKeyParsingError({})", s),
+        }
+
+        // Alternatively:
+        //std::fmt::Debug::fmt(&self, f)
     }
 }
 

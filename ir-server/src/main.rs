@@ -7,7 +7,7 @@ mod utils;
 
 use clap::Parser;
 use config::Config;
-use log::info;
+use log::{error, info};
 use registry::Registry;
 
 type RegistryResult<T> = Result<T, error::RegistryError>;
@@ -89,7 +89,9 @@ async fn main() -> RegistryResult<()>
     info!("{:?}", reg);
 
     info!("Launching the HTTP(S) server");
-    httpd::run(reg).await?;
+    if let Result::Err(e) = httpd::run(reg).await {
+        error!("{}", e);
+    }
 
     Ok(())
 }
