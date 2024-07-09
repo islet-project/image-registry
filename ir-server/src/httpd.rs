@@ -42,8 +42,8 @@ pub async fn run<T: ImageRegistry + 'static>(reg: T) -> RegistryResult<()>
 
     match Config::readu().tls {
         Protocol::NoTls => axum::serve(listener, app).await?,
-        Protocol::Tls => tls::serve(listener, app).await?,
-        Protocol::RaTls => panic!("RA-TLS NOT IMPLEMENTED"),
+        Protocol::Tls => tls::serve_tls(listener, app).await?,
+        Protocol::RaTls => tls::serve_ratls(listener, app).await?,
     }
 
     Ok(())
