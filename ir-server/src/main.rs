@@ -75,7 +75,7 @@ async fn main() -> RegistryResult<()>
     debug!("{:#?}", Config::readu());
 
     let reg = Registry::import(&Config::readu().root)?;
-    debug!("{:?}", reg);
+    debug!("{:#?}", reg);
 
     info!("Launching the HTTP(S) server");
     if let Result::Err(e) = httpd::run(reg).await {

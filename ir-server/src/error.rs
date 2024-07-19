@@ -5,8 +5,10 @@ pub enum RegistryError
     RustlsError(tokio_rustls::rustls::Error),
     SerdeYamlError(serde_yaml::Error),
     SerdeJsonError(serde_json::Error),
+    OciSpecError(oci_spec::OciSpecError),
     PrivateKeyParsingError(String),
     ConfigError(String),
+    OciRegistryError(String),
     GenericError(String),
 }
 
@@ -21,8 +23,10 @@ impl std::fmt::Display for RegistryError
             RegistryError::RustlsError(e) => write!(f, "RustlsError({:?})", e),
             RegistryError::SerdeYamlError(e) => write!(f, "SerdeYamlError({:?})", e),
             RegistryError::SerdeJsonError(e) => write!(f, "SerdeJsonError({:?})", e),
+            RegistryError::OciSpecError(e) => write!(f, "OciSpecError({:?}", e),
             RegistryError::PrivateKeyParsingError(s) => write!(f, "PrivateKeyParsingError({})", s),
             RegistryError::ConfigError(s) => write!(f, "ConfigError({})", s),
+            RegistryError::OciRegistryError(s) => write!(f, "OciRegistryError({})", s),
             RegistryError::GenericError(s) => write!(f, "Generic({})", s),
         }
 
@@ -60,6 +64,14 @@ impl From<serde_json::Error> for RegistryError
     fn from(value: serde_json::Error) -> Self
     {
         Self::SerdeJsonError(value)
+    }
+}
+
+impl From<oci_spec::OciSpecError> for RegistryError
+{
+    fn from(value: oci_spec::OciSpecError) -> Self
+    {
+        Self::OciSpecError(value)
     }
 }
 
