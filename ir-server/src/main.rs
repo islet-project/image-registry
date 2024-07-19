@@ -1,6 +1,7 @@
 mod config;
 mod error;
 mod httpd;
+mod oci;
 mod registry;
 mod tls;
 mod utils;
@@ -8,7 +9,7 @@ mod utils;
 use clap::Parser;
 use config::Config;
 use log::{debug, error, info};
-use registry::Registry;
+use oci::Registry;
 
 type RegistryResult<T> = Result<T, error::RegistryError>;
 
@@ -47,10 +48,6 @@ struct Cli
     /// RA-TLS: JSON containing reference values, none to use {crate_root}/ratls/example.json
     #[arg(short = 'j', long)]
     reference_json: Option<String>,
-
-    /// generate new example registry removing previous one if exists
-    #[arg(short, long)]
-    gen: bool,
 }
 
 #[tokio::main]
@@ -75,16 +72,10 @@ async fn main() -> RegistryResult<()>
         config.tls = cli.tls;
     }
 
-    if cli.gen {
-        info!("Generating an example image registry");
-        Registry::generate_example()?;
-        return Ok(());
-    }
-
     debug!("{:#?}", Config::readu());
 
-    let reg = Registry::import()?;
-    info!("{:?}", reg);
+    let reg = Registry::import(&Config::readu().root)?;
+    debug!("{:?}", reg);
 
     info!("Launching the HTTP(S) server");
     if let Result::Err(e) = httpd::run(reg).await {

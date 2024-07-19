@@ -7,7 +7,6 @@ use crate::error::RegistryError;
 use crate::{utils, RegistryResult};
 
 pub const DEFAULT_SERVER: &str = "registry";
-pub const DEFAULT_DATABASE: &str = "database.yaml";
 pub const DEFAULT_CERT: &str = "certs/server.crt";
 pub const DEFAULT_KEY: &str = "certs/server.key";
 pub const DEFAULT_RATLS_VERAISON_KEY: &str = "ratls/pkey.jwk";
@@ -30,7 +29,6 @@ pub enum Protocol
 pub struct Config
 {
     pub root: String,
-    pub database: String,
     pub cert: String,
     pub key: String,
     pub tls: Protocol,
@@ -49,7 +47,6 @@ impl Config
     {
         Config {
             root: String::new(),
-            database: String::new(),
             cert: String::new(),
             key: String::new(),
             tls: Protocol::default(),
@@ -68,7 +65,6 @@ impl Config
             None => fs::canonicalize(&utils::get_crate_root())?.join(DEFAULT_SERVER),
         };
         self.root = base.to_string_lossy().to_string();
-        self.database = base.join(DEFAULT_DATABASE).to_string_lossy().to_string();
 
         Ok(())
     }

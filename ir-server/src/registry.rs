@@ -65,7 +65,7 @@ impl Registry
 {
     fn deserialize() -> RegistryResult<Vec<ImageSerialized>>
     {
-        let yaml = utils::file_read(&Config::readu().database)?;
+        let yaml = utils::file_read("")?;
         let reg: Vec<ImageSerialized> = serde_yaml::from_slice(&yaml)?;
 
         Ok(reg)
@@ -74,7 +74,7 @@ impl Registry
     fn serialize(reg: Vec<ImageSerialized>) -> RegistryResult<()>
     {
         let yaml = serde_yaml::to_string(&reg)?;
-        utils::file_write(&Config::readu().database, yaml.as_bytes())?;
+        utils::file_write("", yaml.as_bytes())?;
 
         Ok(())
     }
