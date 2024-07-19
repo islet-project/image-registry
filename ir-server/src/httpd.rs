@@ -23,15 +23,15 @@ pub async fn run<T: ImageRegistry + 'static>(reg: T) -> RegistryResult<()>
     let reg = Arc::new(RwLock::new(reg));
 
     let app = Router::new()
-        .route("/v2", routing::get(get_support))
+        .route("/v2/", routing::get(get_support))
         .route("/v2/:name/tags/list", routing::get(get_tags))
         .route(
             "/v2/:name/manifests/:reference",
-            routing::get(get_manifest).post(post_manifest),
+            routing::get(get_manifest).head(head_manifest),
         )
         .route(
             "/v2/:name/blobs/:digest",
-            routing::get(get_blob).post(post_blob),
+            routing::get(get_blob).head(head_blob),
         )
         .with_state(reg)
         .fallback(fallback)
@@ -77,12 +77,12 @@ async fn get_manifest(
 }
 
 #[allow(dead_code)]
-async fn post_manifest(
+async fn head_manifest(
     extract::State(_reg): extract::State<SafeReg>,
     extract::Path((name, reference)): extract::Path<(String, String)>,
 ) -> impl IntoResponse
 {
-    let msg = format!("NI: POST manifest; name={}, reference={}", name, reference);
+    let msg = format!("NI: HEAD manifest; name={}, reference={}", name, reference);
     (http::StatusCode::NOT_IMPLEMENTED, msg).into_response()
 }
 
@@ -97,12 +97,12 @@ async fn get_blob(
 }
 
 #[allow(dead_code)]
-async fn post_blob(
+async fn head_blob(
     extract::State(_reg): extract::State<SafeReg>,
     extract::Path((name, digest)): extract::Path<(String, String)>,
 ) -> impl IntoResponse
 {
-    let msg = format!("NI: POST blob; name={}, digest={}", name, digest);
+    let msg = format!("NI: HEAD blob; name={}, digest={}", name, digest);
     (http::StatusCode::NOT_IMPLEMENTED, msg).into_response()
 }
 
