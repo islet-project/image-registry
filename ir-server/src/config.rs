@@ -21,6 +21,7 @@ pub enum Protocol
     RaTls,
 }
 
+#[derive(Debug)]
 pub struct Config
 {
     pub root: String,

@@ -7,7 +7,7 @@ mod utils;
 
 use clap::Parser;
 use config::Config;
-use log::{error, info};
+use log::{debug, error, info};
 use registry::Registry;
 
 type RegistryResult<T> = Result<T, error::RegistryError>;
@@ -81,9 +81,7 @@ async fn main() -> RegistryResult<()>
         return Ok(());
     }
 
-    info!("Server root: {}", Config::readu().root);
-    info!("Server certificates: {}", Config::readu().cert);
-    info!("Server private key: {}", Config::readu().key);
+    debug!("{:#?}", Config::readu());
 
     let reg = Registry::import()?;
     info!("{:?}", reg);
