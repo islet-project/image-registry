@@ -20,7 +20,7 @@ enum Commands {
 #[derive(Args, Debug)]
 struct GetManifestArgs {
     /// Host url address
-    #[arg(short = 'a', long, default_value = "http://localhost:8888")]
+    #[arg(short = 'a', long, default_value = "http://localhost:1337")]
     host: String,
 
     /// Uuid of image
@@ -35,7 +35,7 @@ struct GetManifestArgs {
 #[derive(Args, Debug)]
 struct GetImageArgs {
     // Host url address
-    #[arg(short = 'a', long, default_value = "http://localhost:8888")]
+    #[arg(short = 'a', long, default_value = "http://localhost:1337")]
     host: String,
 
     // Uuid of image

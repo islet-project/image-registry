@@ -33,7 +33,7 @@ struct Cli
     tls: config::Protocol,
 
     /// server port
-    #[arg(short, long, default_value_t = 8888)]
+    #[arg(short, long, default_value_t = 1337)]
     port: u16,
 
     /// RA-TLS: Veraison verification service host
