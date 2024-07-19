@@ -1,5 +1,5 @@
 use axum::{body, extract, http, response::IntoResponse, routing, Json, Router};
-use log::info;
+use log::{debug, info};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tower::ServiceBuilder;
@@ -38,6 +38,7 @@ pub async fn run<T: ImageRegistry + 'static>(reg: T) -> RegistryResult<()>
         .layer(ServiceBuilder::new().layer(TraceLayer::new_for_http()));
 
     let address = format!("0.0.0.0:{}", Config::readu().port);
+    debug!("Binding address: {}", address);
     let listener = tokio::net::TcpListener::bind(address).await?;
 
     match Config::readu().tls {

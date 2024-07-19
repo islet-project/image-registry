@@ -2,6 +2,7 @@ use axum::{extract::Request, Router};
 use futures_util::pin_mut;
 use hyper::body::Incoming;
 use hyper_util::rt::{TokioExecutor, TokioIo};
+use log::debug;
 use ratls::{ChainVerifier, InternalTokenVerifier, RaTlsCertVeryfier};
 use realm_verifier::{parser_json::parse_value, RealmVerifier};
 use std::{fs::File, io::BufReader, sync::Arc};
@@ -46,6 +47,8 @@ fn ratls_server_config(
 
 pub async fn serve_tls(listener: TcpListener, app: Router) -> RegistryResult<()>
 {
+    debug!("Initializing TLS");
+
     default_provider()
         .install_default()
         .expect("Could not install CryptoProvider");
@@ -56,6 +59,8 @@ pub async fn serve_tls(listener: TcpListener, app: Router) -> RegistryResult<()>
 
 pub async fn serve_ratls(listener: TcpListener, app: Router) -> RegistryResult<()>
 {
+    debug!("Initializing RA-TLS");
+
     default_provider()
         .install_default()
         .expect("Could not install CryptoProvider");
