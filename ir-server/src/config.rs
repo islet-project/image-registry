@@ -3,7 +3,8 @@
 use std::fs;
 use std::sync::{PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use crate::utils;
+use crate::error::RegistryError;
+use crate::{utils, RegistryResult};
 
 pub const DEFAULT_SERVER: &str = "registry";
 pub const DEFAULT_DATABASE: &str = "database.yaml";
@@ -11,6 +12,10 @@ pub const DEFAULT_CERT: &str = "certs/server.crt";
 pub const DEFAULT_KEY: &str = "certs/server.key";
 pub const DEFAULT_RATLS_VERAISON_KEY: &str = "ratls/pkey.jwk";
 pub const DEFAULT_RATLS_REFERENCE_JSON: &str = "ratls/example.json";
+
+macro_rules! err {
+    ($($arg:tt)+) => (Err(RegistryError::ConfigError(format!($($arg)+))))
+}
 
 #[derive(clap::ValueEnum, Clone, Default, Debug)]
 pub enum Protocol
@@ -56,10 +61,10 @@ impl Config
         }
     }
 
-    pub fn set_server_root(&mut self, root: Option<&str>) -> std::io::Result<()>
+    pub fn set_server_root(&mut self, root: Option<&str>) -> RegistryResult<()>
     {
         let base = match root {
-            Some(r) => fs::canonicalize(r)?,
+            Some(r) => fs::canonicalize(r).or(err!("Server root path \"{}\" doesn't exist", r))?,
             None => fs::canonicalize(&utils::get_crate_root())?.join(DEFAULT_SERVER),
         };
         self.root = base.to_string_lossy().to_string();
@@ -68,10 +73,10 @@ impl Config
         Ok(())
     }
 
-    pub fn set_server_cert(&mut self, cert: Option<&str>) -> std::io::Result<()>
+    pub fn set_server_cert(&mut self, cert: Option<&str>) -> RegistryResult<()>
     {
         let base = match cert {
-            Some(c) => fs::canonicalize(c)?,
+            Some(c) => fs::canonicalize(c).or(err!("Server cert path \"{}\" doesn't exist", c))?,
             None => fs::canonicalize(&utils::get_crate_root())?.join(DEFAULT_CERT),
         };
         self.cert = base.to_string_lossy().to_string();
@@ -79,10 +84,10 @@ impl Config
         Ok(())
     }
 
-    pub fn set_server_key(&mut self, key: Option<&str>) -> std::io::Result<()>
+    pub fn set_server_key(&mut self, key: Option<&str>) -> RegistryResult<()>
     {
         let base = match key {
-            Some(k) => fs::canonicalize(k)?,
+            Some(k) => fs::canonicalize(k).or(err!("Server key path \"{}\" doesn't exist", k))?,
             None => fs::canonicalize(&utils::get_crate_root())?.join(DEFAULT_KEY),
         };
         self.key = base.to_string_lossy().to_string();
@@ -90,10 +95,10 @@ impl Config
         Ok(())
     }
 
-    pub fn set_veraison_key(&mut self, key: Option<&str>) -> std::io::Result<()>
+    pub fn set_veraison_key(&mut self, key: Option<&str>) -> RegistryResult<()>
     {
         let base = match key {
-            Some(k) => fs::canonicalize(k)?,
+            Some(k) => fs::canonicalize(k).or(err!("Veraizon key path \"{}\" doesn't exist", k))?,
             None => fs::canonicalize(&utils::get_crate_root())?.join(DEFAULT_RATLS_VERAISON_KEY),
         };
         self.veraison_pubkey = base.to_string_lossy().to_string();
@@ -101,10 +106,11 @@ impl Config
         Ok(())
     }
 
-    pub fn set_reference_json(&mut self, key: Option<&str>) -> std::io::Result<()>
+    pub fn set_reference_json(&mut self, key: Option<&str>) -> RegistryResult<()>
     {
         let base = match key {
-            Some(rj) => fs::canonicalize(rj)?,
+            Some(j) => fs::canonicalize(j)
+                .or(err!("Veraizon reference JSON path \"{}\" doesn't exist", j))?,
             None => fs::canonicalize(&utils::get_crate_root())?.join(DEFAULT_RATLS_REFERENCE_JSON),
         };
         self.reference_json = base.to_string_lossy().to_string();

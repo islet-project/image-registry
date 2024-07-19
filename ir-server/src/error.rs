@@ -6,6 +6,7 @@ pub enum RegistryError
     SerdeYamlError(serde_yaml::Error),
     SerdeJsonError(serde_json::Error),
     PrivateKeyParsingError(String),
+    ConfigError(String),
     GenericError(String),
 }
 
@@ -21,6 +22,7 @@ impl std::fmt::Display for RegistryError
             RegistryError::SerdeYamlError(e) => write!(f, "SerdeYamlError({:?})", e),
             RegistryError::SerdeJsonError(e) => write!(f, "SerdeJsonError({:?})", e),
             RegistryError::PrivateKeyParsingError(s) => write!(f, "PrivateKeyParsingError({})", s),
+            RegistryError::ConfigError(s) => write!(f, "ConfigError({})", s),
             RegistryError::GenericError(s) => write!(f, "Generic({})", s),
         }
 
