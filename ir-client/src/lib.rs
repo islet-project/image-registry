@@ -1,8 +1,10 @@
+pub mod config;
 pub mod async_client;
 pub mod error;
 
 mod service_url;
 
+use config::Config;
 use error::Error;
 use log::{debug, error, info};
 use ir_protocol::Manifest;
@@ -19,11 +21,25 @@ pub struct Client {
 }
 
 impl Client {
-    /// Create new client for communication with server with given url.
-    pub fn new(host: String) -> Self {
-        Self {
-            url: ServiceUrl::new(host),
-            reqwest_client: ReqwestClient::new(),
+    /// Create new image registry client from given configuration
+    pub fn from_config(config: Config) -> Result<Self, Error> {
+        let Config {host, mode} = config;
+        let url = ServiceUrl::from_str(host);
+        match mode.into_rustls_config() {
+            None => Ok(Self {
+                url,
+                reqwest_client: ReqwestClient::new(),
+            }),
+            Some(client_config) => {
+                let reqwest_client = ReqwestClient::builder()
+                        .use_preconfigured_tls(client_config)
+                        .build()
+                    .map_err(|e| Error::into_config(e))?;
+                Ok(Self {
+                    url,
+                    reqwest_client,
+                })
+            }
         }
     }
 
