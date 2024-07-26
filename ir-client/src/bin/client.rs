@@ -1,4 +1,4 @@
-use ir_client::Client;
+use ir_client::{config::Config, Client};
 
 use clap::{Args, Parser, Subcommand};
 use log::info;
@@ -54,19 +54,24 @@ fn main() {
     println!("{:?}", cli.command);
     match &cli.command {
         Commands::GetManifest(args) => {
-            Client::new(args.host.clone())
-                .get_and_save_manifest(uuid::Uuid::parse_str(&args.uuid).unwrap(), args.out.clone())
-                .unwrap();
-            let manifest = Client::new(args.host.clone())
+            let client = Client::from_config(
+                Config::builder()
+                    .host(args.host.clone())
+                    .no_tls()
+            ).unwrap();
+            client.get_and_save_manifest(uuid::Uuid::parse_str(&args.uuid).unwrap(), args.out.clone())
+                  .unwrap();
+            let manifest = client
                 .get_manifest(uuid::Uuid::parse_str(&args.uuid).unwrap())
                 .unwrap();
             info!("Manifest: {:?}", manifest);
         }
         Commands::GetImage(args) => {
-            Client::new(args.host.clone())
+            let client = Client::from_config(Config::builder().host(args.host.clone()).no_tls()).unwrap();
+            client
                 .get_and_save_image(uuid::Uuid::parse_str(&args.uuid).unwrap(), args.out.clone())
                 .unwrap();
-            let image_bytes = Client::new(args.host.clone())
+            let image_bytes = client
                 .get_image(uuid::Uuid::parse_str(&args.uuid).unwrap())
                 .unwrap();
 

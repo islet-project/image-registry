@@ -25,11 +25,14 @@ impl ServiceFile {
     }
 }
 
+pub const HOST_PROTOCOL_SECURE_PREFIX: &'static str = "https://";
+pub const HOST_PROTOCOL_NONSECURE_PREFIX: &'static str = "http://";
+
 impl ServiceUrl {
     const REGISTRY_PATH: &'static str = "image/";
 
     // Fix: parse host here
-    pub fn new(host: String) -> Self {
+    pub fn from_str(host: String) -> Self {
         Self { host }
     }
 

@@ -3,6 +3,7 @@ use url::ParseError;
 
 #[derive(Debug)]
 pub enum Error {
+    ConfigError(reqwest::Error),
     UnknownUuid,
     UrlParsingError(String),
     JSONParsingError(String),
@@ -22,5 +23,11 @@ impl From<ParseError> for Error {
 impl From<IOError> for Error {
     fn from(value: IOError) -> Self {
         Error::IOError(value)
+    }
+}
+
+impl Error {
+    pub fn into_config(reqwest_error: reqwest::Error) -> Self {
+        Self::ConfigError(reqwest_error)
     }
 }
