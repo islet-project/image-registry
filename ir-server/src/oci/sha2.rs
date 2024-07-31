@@ -22,7 +22,9 @@ pub fn verify<P: AsRef<Path>>(path: P, digest: &OciDigest) -> RegistryResult<boo
         a => err!("Wrong hash algorithm: {}", a)?,
     };
 
-    if hex::encode(&hash) == digest.get_hash() {
+    // unwrap() below is intentional, new() for digest will make sure the hash
+    // is correct, verifying digest created with new_unchecked() is an error
+    if hash == hex::decode(digest.get_hash()).unwrap() {
         Ok(true)
     } else {
         Ok(false)

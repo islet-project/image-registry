@@ -1,4 +1,3 @@
-use regex::Regex;
 use std::{
     fmt::{Debug, Display},
     path::PathBuf,
@@ -114,10 +113,9 @@ impl Digest
             a => err!("Wrong hash algorithm: {}", a)?,
         }
 
-        let re = Regex::new(r"^[a-zA-Z0-9]+$").unwrap();
-        if !re.is_match(&hash) {
-            err!("Hash doesn't match the pattern: {}", re)?;
-        }
+        hex::decode(&hash).map_err(|e| {
+            RegistryError::OciRegistryError(format!("Incorrect hash string: {}", e))
+        })?;
 
         Ok(Digest { algo, hash })
     }

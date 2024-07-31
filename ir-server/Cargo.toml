@@ -28,7 +28,6 @@ tower-service = "*"
 axum = "*"
 async-trait = "*"
 oci-spec = "*"
-regex = "*"
 sha2 = "*"
 hex = "*"
 # RA-TLS
