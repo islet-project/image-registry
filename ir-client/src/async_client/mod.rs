@@ -1,6 +1,5 @@
 use crate::{
-    error::Error,
-    service_url::{ServiceFile, ServiceUrl},
+    config::Config, error::Error, service_url::{ServiceFile, ServiceUrl}
 };
 use futures::stream::TryStreamExt;
 use log::{debug, error, info};
@@ -15,6 +14,32 @@ pub struct Client {
 }
 
 impl Client {
+    /// Create new image registry async client from given configuration
+    pub fn from_config(config: Config) -> Result<Self, Error> {
+        let scheme = config.scheme();
+        let Config {host, mode} = config;
+        let url = ServiceUrl::init(scheme.to_owned(), host);
+        match mode.into_rustls_config() {
+            None => Ok (
+                Self {
+                    url,
+                    reqwest_client: ReqwestClient::new(),
+                }
+            ),
+            Some(client_config) => {
+                let reqwest_client = ReqwestClient::builder()
+                    .use_preconfigured_tls(client_config)
+                    .build()
+                    .map_err(Error::into_config)?;
+                Ok (
+                    Self {
+                        url,
+                        reqwest_client
+                    }
+                )
+            }
+        }
+    }
     pub fn new(host: String) -> Self {
         Self {
             url: ServiceUrl::init("http://".to_string(), host),
