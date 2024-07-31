@@ -17,7 +17,7 @@ pub struct Client {
 impl Client {
     pub fn new(host: String) -> Self {
         Self {
-            url: ServiceUrl::new(host),
+            url: ServiceUrl::init("http://".to_string(), host),
             reqwest_client: ReqwestClient::new(),
         }
     }

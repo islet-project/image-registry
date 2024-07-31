@@ -2,10 +2,6 @@ use crate::error::Error;
 use url::Url;
 use uuid::Uuid;
 
-pub struct ServiceUrl {
-    host: String,
-}
-
 pub enum ServiceFile {
     ImageManifest(Uuid),
     ImageArchive(Uuid),
@@ -25,20 +21,31 @@ impl ServiceFile {
     }
 }
 
-pub const HOST_PROTOCOL_SECURE_PREFIX: &'static str = "https://";
-pub const HOST_PROTOCOL_NONSECURE_PREFIX: &'static str = "http://";
+pub(crate) const HOST_PROTOCOL_SECURE_SCHEME: &'static str = "https://";
+pub(crate) const HOST_PROTOCOL_NONSECURE_SCHEME: &'static str = "http://";
+
+pub struct ServiceUrl {
+    scheme:String,
+    host: String,
+}
 
 impl ServiceUrl {
     const REGISTRY_PATH: &'static str = "image/";
 
-    // Fix: parse host here
-    pub fn from_str(host: String) -> Self {
-        Self { host }
+    /// Scheme should be "http://" or "https://".
+    /// Use Config::scheme() to get proper scheme for your connection.
+    pub fn init(scheme: String, host: String) -> Self {
+        Self { scheme, host }
+    }
+
+    fn host(&self) -> String {
+        self.scheme.clone() + &self.host
+
     }
 
     pub fn get_url(&self, file: ServiceFile) -> Result<Url, Error> {
         let url =
-            Url::parse(&self.host).inspect_err(|e| println!("Failed to parse host: {}", e))?;
+            Url::parse(&self.host()).inspect_err(|e| println!("Failed to parse host: {}", e))?;
         Ok(url.join(Self::REGISTRY_PATH)?.join(&file.get_filename())?)
     }
 }

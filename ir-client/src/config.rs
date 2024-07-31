@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use rustls::{client::ResolvesClientCert, ClientConfig, RootCertStore};
 
+use crate::service_url::{HOST_PROTOCOL_NONSECURE_SCHEME, HOST_PROTOCOL_SECURE_SCHEME};
+
 pub enum ConnectionMode {
     None,
     RusTLS(ClientConfig),
@@ -23,13 +25,6 @@ impl Config {
 }
 
 impl ConnectionMode {
-    pub fn is_secure(&self) -> bool {
-        if let ConnectionMode::None = self {
-            return false;
-        }
-        return true;
-    }
-
     pub fn into_rustls_config(self) -> Option<ClientConfig> {
         match self {
             ConnectionMode::None => None,
