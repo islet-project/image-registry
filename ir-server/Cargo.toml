@@ -31,6 +31,6 @@ oci-spec = "*"
 sha2 = "*"
 hex = "*"
 # RA-TLS
-ratls = { git = "https://github.com/islet-project/remote-attestation" }
-realm-verifier = { git = "https://github.com/islet-project/remote-attestation" }
-veraison-verifier = { git = "https://github.com/islet-project/remote-attestation" }
+ratls = { git = "https://github.com/islet-project/remote-attestation", branch = "dev/z.abramowska/temp" }
+realm-verifier = { git = "https://github.com/islet-project/remote-attestation", branch = "dev/z.abramowska/temp"  }
+veraison-verifier = { git = "https://github.com/islet-project/remote-attestation", branch = "dev/z.abramowska/temp"  }

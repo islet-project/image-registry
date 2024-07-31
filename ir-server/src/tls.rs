@@ -11,7 +11,7 @@ use tokio_rustls::rustls::crypto::ring::default_provider;
 use tokio_rustls::rustls::ServerConfig;
 use tokio_rustls::TlsAcceptor;
 use tower_service::Service;
-use veraison_verifier::VeraisonTokenVerifer;
+// use veraison_verifier::VeraisonTokenVerifer;
 
 use crate::config::Config;
 use crate::utils;
@@ -70,10 +70,10 @@ pub async fn serve_ratls(listener: TcpListener, app: Router) -> RegistryResult<(
     let reference_measurements = parse_value(reference_json["realm"]["reference-values"].take())?;
 
     let client_token_verifier = Arc::new(ChainVerifier::new(vec![
-        Arc::new(VeraisonTokenVerifer::new(
-            &Config::readu().veraison_url,
-            &Config::readu().veraison_pubkey,
-        )),
+        // Arc::new(VeraisonTokenVerifer::new(
+        //     &Config::readu().veraison_url,
+        //     &Config::readu().veraison_pubkey,
+        // )),
         Arc::new(RealmVerifier::init(reference_measurements)),
     ]));
 
