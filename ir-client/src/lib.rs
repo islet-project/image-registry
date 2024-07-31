@@ -23,8 +23,9 @@ pub struct Client {
 impl Client {
     /// Create new image registry client from given configuration
     pub fn from_config(config: Config) -> Result<Self, Error> {
+        let scheme = config.scheme();
         let Config {host, mode} = config;
-        let url = ServiceUrl::from_str(host);
+        let url = ServiceUrl::init(scheme.to_owned(), host);
         match mode.into_rustls_config() {
             None => Ok(Self {
                 url,
