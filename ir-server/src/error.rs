@@ -27,7 +27,7 @@ impl std::fmt::Display for RegistryError
             RegistryError::PrivateKeyParsing(s) => write!(f, "PrivateKeyParsingError({})", s),
             RegistryError::Config(s) => write!(f, "ConfigError({})", s),
             RegistryError::OciRegistry(s) => write!(f, "OciRegistryError({})", s),
-            RegistryError::Generic(s) => write!(f, "Generic({})", s),
+            RegistryError::Generic(s) => write!(f, "GenericError({})", s),
         }
 
         // Alternatively:

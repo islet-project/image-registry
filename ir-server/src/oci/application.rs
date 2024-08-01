@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 
 use super::digest::Digest;
 use super::sha2;
+use super::tag;
 use super::validate::Validate;
 use crate::error::RegistryError;
 use crate::RegistryResult;
@@ -80,6 +81,9 @@ impl Application
 
             if let Some(anns) = desc.annotations() {
                 if let Some(tag) = anns.get(ANNOTATION_REF_NAME) {
+                    if !tag::verify(tag) {
+                        err!("Tag \"{}\" doesn't match: {}", tag, tag::PATTERN)?;
+                    }
                     self.tags.insert(tag.to_string(), path.clone());
                 }
             }
