@@ -3,7 +3,7 @@ use crate::{
 };
 use futures::stream::TryStreamExt;
 use log::{debug, error, info};
-use ir_protocol::Manifest;
+use oci_spec::image::ImageManifest;
 use reqwest::{Client as ReqwestClient, Response};
 use url::Url;
 use uuid::Uuid;
@@ -47,13 +47,13 @@ impl Client {
         }
     }
 
-    pub async fn get_manifest(&self, uuid: Uuid) -> Result<Manifest, Error> {
+    pub async fn get_manifest(&self, uuid: Uuid) -> Result<ImageManifest, Error> {
         let response = self
             .get_response(self.url.get_url(ServiceFile::ImageManifest(uuid))?)
             .await?;
 
         match response
-            .json::<Manifest>()
+            .json::<ImageManifest>()
             .await
             .inspect_err(|e| error!("Failed  to parse JSON: {}", e))
         {

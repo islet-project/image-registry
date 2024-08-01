@@ -7,7 +7,7 @@ mod service_url;
 use config::Config;
 use error::Error;
 use log::{debug, error, info};
-use ir_protocol::Manifest;
+use oci_spec::image::ImageManifest;
 use reqwest::blocking::{Client as ReqwestClient, Response};
 use service_url::{ServiceFile, ServiceUrl};
 use std::fs::File;
@@ -45,11 +45,11 @@ impl Client {
     }
 
     /// Fetch Manifest with given Uuid.
-    pub fn get_manifest(&self, uuid: Uuid) -> Result<Manifest, Error> {
+    pub fn get_manifest(&self, uuid: Uuid) -> Result<ImageManifest, Error> {
         let response = self.get_response(self.url.get_url(ServiceFile::ImageManifest(uuid))?)?;
 
         match response
-            .json::<Manifest>()
+            .json::<ImageManifest>()
             .inspect_err(|e| error!("Failed  to parse JSON: {}", e))
         {
             Ok(manifest) => Ok(manifest),

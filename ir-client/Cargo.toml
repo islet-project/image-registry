@@ -6,7 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ir-protocol = { path = "../ir-protocol" }
 uuid = { version = "*", features = ["v4", "fast-rng", "macro-diagnostics", "serde"] }
 
 url = "*"
@@ -18,6 +17,8 @@ tokio = { version = "*", features = ["full"] }
 tokio-util = {version = "*", features = ["io"]}
 pin-project = "*"
 futures = "*"
+
+oci-spec = "*"
 
 ### DO NOT MODIFY (unless you know what you are doing) ###
 # Reqwest client provides API to pass custom rustls::ClientConfig through "impl Any".
