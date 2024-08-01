@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
-use super::Digest as OciDigest;
+use super::digest::Digest as OciDigest;
 use crate::error::RegistryError;
 use crate::RegistryResult;
 
