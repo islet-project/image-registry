@@ -26,6 +26,7 @@ pub fn get_crate_root() -> String
     return workspace.to_string_lossy().to_string();
 }
 
+#[allow(dead_code)]
 pub fn file_read(filename: &str) -> std::io::Result<Vec<u8>>
 {
     let mut buf = Vec::new();
@@ -33,6 +34,7 @@ pub fn file_read(filename: &str) -> std::io::Result<Vec<u8>>
     Ok(buf)
 }
 
+#[allow(dead_code)]
 pub fn file_write(filename: &str, data: &[u8]) -> std::io::Result<()>
 {
     File::create(filename)?.write_all(data)

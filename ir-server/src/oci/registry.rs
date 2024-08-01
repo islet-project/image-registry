@@ -1,14 +1,13 @@
 use async_trait::async_trait;
-use ir_protocol::Manifest;
 use log::{debug, error, info, warn};
 use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::path::Path;
 use tokio::fs;
 use tokio_util::io;
-use uuid::Uuid;
 
 use super::application::Application;
+use super::digest::Digest;
 use crate::error::RegistryError;
 use crate::registry::ImageRegistry;
 use crate::RegistryResult;
@@ -65,13 +64,54 @@ impl Registry
 #[async_trait]
 impl ImageRegistry for Registry
 {
-    fn get_manifest(&self, _uuid: &Uuid) -> Option<&Manifest>
+    fn get_tags(&self, app: &str) -> Vec<String>
     {
-        None
+        let Some(app) = self.apps.get(app) else {
+            return Vec::new();
+        };
+
+        let tags = app.get_tags();
+        tags.keys().map(|k| k.to_string()).collect()
     }
 
-    async fn get_image(&self, _uuid: &Uuid) -> Option<io::ReaderStream<fs::File>>
+    async fn get_manifest(&self, app: &str, reference: &str) -> Option<io::ReaderStream<fs::File>>
     {
-        None
+        let app = self.apps.get(app)?;
+
+        // assume that reference is a digest first
+        let path = match Digest::try_from(reference) {
+            Ok(digest) => app.get_manifests().get(&digest)?,
+            Err(_) => app.get_tags().get(reference)?,
+        };
+
+        let file = match fs::File::open(path).await {
+            Ok(file) => file,
+            Err(err) => {
+                error!("Error opening \"{}\": {}", path.display(), err);
+                return None;
+            }
+        };
+
+        Some(tokio_util::io::ReaderStream::new(file))
+    }
+
+    async fn get_blob(&self, app: &str, digest: &str) -> Option<io::ReaderStream<fs::File>>
+    {
+        let a = self.apps.get(app)?;
+
+        let path = match Digest::try_from(digest) {
+            Ok(digest) => a.get_blobs().get(&digest)?,
+            Err(_) => return None,
+        };
+
+        let file = match fs::File::open(path).await {
+            Ok(file) => file,
+            Err(err) => {
+                error!("Error opening \"{}\": {}", path.display(), err);
+                return None;
+            }
+        };
+
+        Some(tokio_util::io::ReaderStream::new(file))
     }
 }

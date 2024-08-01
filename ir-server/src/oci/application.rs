@@ -152,6 +152,21 @@ impl Application
         }
     }
 
+    pub fn get_tags(&self) -> &HashMap<String, PathBuf>
+    {
+        &self.tags
+    }
+
+    pub fn get_manifests(&self) -> &HashMap<Digest, PathBuf>
+    {
+        &self.manifests
+    }
+
+    pub fn get_blobs(&self) -> &HashMap<Digest, PathBuf>
+    {
+        &self.blobs
+    }
+
     pub fn import(path: &Path) -> RegistryResult<Self>
     {
         info!("Loading application from: \"{}\"", path.display());

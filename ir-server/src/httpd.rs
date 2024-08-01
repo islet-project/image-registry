@@ -123,16 +123,12 @@ async fn http_get(
     let registry = reg.read().await;
     match v[1].to_lowercase().as_str() {
         "json" => {
-            if let Some(manifest) = registry.get_manifest(&uuid) {
-                info!("Manifest for {} found and served", uuid);
-                Json(manifest).into_response()
-            } else {
-                info!("Manifest for {} not found", uuid);
-                (http::StatusCode::NOT_FOUND, "Manifest not found").into_response()
-            }
+            let tags = registry.get_tags("");
+            info!("Manifest for {} found and served", uuid);
+            Json(tags).into_response()
         }
         ext @ "tgz" => {
-            if let Some(stream) = registry.get_image(&uuid).await {
+            if let Some(stream) = registry.get_manifest("", "").await {
                 let body = body::Body::from_stream(stream);
 
                 let headers = [
