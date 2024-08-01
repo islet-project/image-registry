@@ -33,7 +33,7 @@ where
     T: AsRef<[u8]>,
     S: Serializer,
 {
-    serializer.serialize_str(&hex::encode(&buffer))
+    serializer.serialize_str(&hex::encode(buffer))
 }
 
 pub fn from_hex<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>

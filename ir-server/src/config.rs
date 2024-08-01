@@ -13,7 +13,7 @@ pub const DEFAULT_RATLS_VERAISON_KEY: &str = "ratls/pkey.jwk";
 pub const DEFAULT_RATLS_REFERENCE_JSON: &str = "ratls/example.json";
 
 macro_rules! err {
-    ($($arg:tt)+) => (Err(RegistryError::ConfigError(format!($($arg)+))))
+    ($($arg:tt)+) => (Err(RegistryError::Config(format!($($arg)+))))
 }
 
 #[derive(clap::ValueEnum, Clone, Default, Debug)]
@@ -26,6 +26,7 @@ pub enum Protocol
 }
 
 #[derive(Debug)]
+#[non_exhaustive]
 pub struct Config
 {
     pub root: String,
@@ -36,9 +37,6 @@ pub struct Config
     pub veraison_url: String,
     pub veraison_pubkey: String,
     pub reference_json: String,
-
-    #[allow(dead_code)]
-    block: (),
 }
 
 impl Config
@@ -54,7 +52,6 @@ impl Config
             veraison_url: String::new(),
             veraison_pubkey: String::new(),
             reference_json: String::new(),
-            block: (),
         }
     }
 
@@ -62,7 +59,7 @@ impl Config
     {
         let base = match root {
             Some(r) => fs::canonicalize(r).or(err!("Server root path \"{}\" doesn't exist", r))?,
-            None => fs::canonicalize(&utils::get_crate_root())?.join(DEFAULT_SERVER),
+            None => fs::canonicalize(utils::get_crate_root())?.join(DEFAULT_SERVER),
         };
         self.root = base.to_string_lossy().to_string();
 
@@ -73,7 +70,7 @@ impl Config
     {
         let base = match cert {
             Some(c) => fs::canonicalize(c).or(err!("Server cert path \"{}\" doesn't exist", c))?,
-            None => fs::canonicalize(&utils::get_crate_root())?.join(DEFAULT_CERT),
+            None => fs::canonicalize(utils::get_crate_root())?.join(DEFAULT_CERT),
         };
         self.cert = base.to_string_lossy().to_string();
 
@@ -84,7 +81,7 @@ impl Config
     {
         let base = match key {
             Some(k) => fs::canonicalize(k).or(err!("Server key path \"{}\" doesn't exist", k))?,
-            None => fs::canonicalize(&utils::get_crate_root())?.join(DEFAULT_KEY),
+            None => fs::canonicalize(utils::get_crate_root())?.join(DEFAULT_KEY),
         };
         self.key = base.to_string_lossy().to_string();
 
@@ -95,7 +92,7 @@ impl Config
     {
         let base = match key {
             Some(k) => fs::canonicalize(k).or(err!("Veraizon key path \"{}\" doesn't exist", k))?,
-            None => fs::canonicalize(&utils::get_crate_root())?.join(DEFAULT_RATLS_VERAISON_KEY),
+            None => fs::canonicalize(utils::get_crate_root())?.join(DEFAULT_RATLS_VERAISON_KEY),
         };
         self.veraison_pubkey = base.to_string_lossy().to_string();
 
@@ -107,7 +104,7 @@ impl Config
         let base = match key {
             Some(j) => fs::canonicalize(j)
                 .or(err!("Veraizon reference JSON path \"{}\" doesn't exist", j))?,
-            None => fs::canonicalize(&utils::get_crate_root())?.join(DEFAULT_RATLS_REFERENCE_JSON),
+            None => fs::canonicalize(utils::get_crate_root())?.join(DEFAULT_RATLS_REFERENCE_JSON),
         };
         self.reference_json = base.to_string_lossy().to_string();
 
@@ -132,7 +129,7 @@ impl Config
         static mut CONFIG: Option<RwLock<Config>> = None;
 
         unsafe {
-            if let None = *std::ptr::addr_of!(CONFIG) {
+            if (*std::ptr::addr_of!(CONFIG)).is_none() {
                 CONFIG.replace(RwLock::new(Config::new()));
             }
 

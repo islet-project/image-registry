@@ -1,15 +1,15 @@
 #[derive(Debug)]
 pub enum RegistryError
 {
-    IOError(std::io::Error),
-    RustlsError(tokio_rustls::rustls::Error),
-    SerdeYamlError(serde_yaml::Error),
-    SerdeJsonError(serde_json::Error),
-    OciSpecError(oci_spec::OciSpecError),
-    PrivateKeyParsingError(String),
-    ConfigError(String),
-    OciRegistryError(String),
-    GenericError(String),
+    IO(std::io::Error),
+    Rustls(tokio_rustls::rustls::Error),
+    SerdeYaml(serde_yaml::Error),
+    SerdeJson(serde_json::Error),
+    OciSpec(oci_spec::OciSpecError),
+    PrivateKeyParsing(String),
+    Config(String),
+    OciRegistry(String),
+    Generic(String),
 }
 
 impl std::error::Error for RegistryError {}
@@ -19,15 +19,15 @@ impl std::fmt::Display for RegistryError
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
     {
         match self {
-            RegistryError::IOError(e) => write!(f, "IOError({:?})", e),
-            RegistryError::RustlsError(e) => write!(f, "RustlsError({:?})", e),
-            RegistryError::SerdeYamlError(e) => write!(f, "SerdeYamlError({:?})", e),
-            RegistryError::SerdeJsonError(e) => write!(f, "SerdeJsonError({:?})", e),
-            RegistryError::OciSpecError(e) => write!(f, "OciSpecError({:?}", e),
-            RegistryError::PrivateKeyParsingError(s) => write!(f, "PrivateKeyParsingError({})", s),
-            RegistryError::ConfigError(s) => write!(f, "ConfigError({})", s),
-            RegistryError::OciRegistryError(s) => write!(f, "OciRegistryError({})", s),
-            RegistryError::GenericError(s) => write!(f, "Generic({})", s),
+            RegistryError::IO(e) => write!(f, "IOError({:?})", e),
+            RegistryError::Rustls(e) => write!(f, "RustlsError({:?})", e),
+            RegistryError::SerdeYaml(e) => write!(f, "SerdeYamlError({:?})", e),
+            RegistryError::SerdeJson(e) => write!(f, "SerdeJsonError({:?})", e),
+            RegistryError::OciSpec(e) => write!(f, "OciSpecError({:?}", e),
+            RegistryError::PrivateKeyParsing(s) => write!(f, "PrivateKeyParsingError({})", s),
+            RegistryError::Config(s) => write!(f, "ConfigError({})", s),
+            RegistryError::OciRegistry(s) => write!(f, "OciRegistryError({})", s),
+            RegistryError::Generic(s) => write!(f, "Generic({})", s),
         }
 
         // Alternatively:
@@ -39,7 +39,7 @@ impl From<std::io::Error> for RegistryError
 {
     fn from(value: std::io::Error) -> Self
     {
-        Self::IOError(value)
+        Self::IO(value)
     }
 }
 
@@ -47,7 +47,7 @@ impl From<tokio_rustls::rustls::Error> for RegistryError
 {
     fn from(value: tokio_rustls::rustls::Error) -> Self
     {
-        Self::RustlsError(value)
+        Self::Rustls(value)
     }
 }
 
@@ -55,7 +55,7 @@ impl From<serde_yaml::Error> for RegistryError
 {
     fn from(value: serde_yaml::Error) -> Self
     {
-        Self::SerdeYamlError(value)
+        Self::SerdeYaml(value)
     }
 }
 
@@ -63,7 +63,7 @@ impl From<serde_json::Error> for RegistryError
 {
     fn from(value: serde_json::Error) -> Self
     {
-        Self::SerdeJsonError(value)
+        Self::SerdeJson(value)
     }
 }
 
@@ -71,7 +71,7 @@ impl From<oci_spec::OciSpecError> for RegistryError
 {
     fn from(value: oci_spec::OciSpecError) -> Self
     {
-        Self::OciSpecError(value)
+        Self::OciSpec(value)
     }
 }
 
@@ -79,6 +79,6 @@ impl From<&'static str> for RegistryError
 {
     fn from(value: &'static str) -> Self
     {
-        RegistryError::GenericError(value.to_string())
+        RegistryError::Generic(value.to_string())
     }
 }

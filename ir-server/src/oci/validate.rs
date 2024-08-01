@@ -6,7 +6,7 @@ use crate::RegistryResult;
 const OCI_LAYOUT_VERSION: &str = "1.0.0";
 
 macro_rules! err {
-    ($($arg:tt)+) => (Err(RegistryError::OciRegistryError(format!($($arg)+))))
+    ($($arg:tt)+) => (Err(RegistryError::OciRegistry(format!($($arg)+))))
 }
 
 pub trait Validate
@@ -18,7 +18,7 @@ impl Validate for OciLayout
 {
     fn validate(&self) -> RegistryResult<()>
     {
-        let image_layout_version: &str = &self.image_layout_version();
+        let image_layout_version: &str = self.image_layout_version();
         if image_layout_version != OCI_LAYOUT_VERSION {
             err!(
                 "Wrong OCI layout version: {}, expected: {}",

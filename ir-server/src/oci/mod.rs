@@ -26,7 +26,7 @@ const INDEX_JSON: &str = "index.json";
 const BLOBS_SUBDIR: &str = "blobs";
 
 macro_rules! err {
-    ($($arg:tt)+) => (Err(RegistryError::OciRegistryError(format!($($arg)+))))
+    ($($arg:tt)+) => (Err(RegistryError::OciRegistry(format!($($arg)+))))
 }
 
 #[derive(Debug, Default)]
@@ -61,9 +61,8 @@ impl Application
                 let file_name = file.file_name().unwrap_or(OsStr::new("")).to_string_lossy();
                 let digest = Digest::new_unchecked(algo.to_string(), file_name.to_string());
 
-                match (self.blobs.get(&digest), self.manifests.get(&digest)) {
-                    (None, None) => orphans.push(digest),
-                    _ => (),
+                if let (None, None) = (self.blobs.get(&digest), self.manifests.get(&digest)) {
+                    orphans.push(digest);
                 }
             }
         }
@@ -162,9 +161,10 @@ impl Application
 
     fn new(path: &Path) -> Self
     {
-        let mut app = Application::default();
-        app.path = path.to_owned();
-        app
+        Self {
+            path: path.to_owned(),
+            ..Default::default()
+        }
     }
 
     pub fn import(path: &Path) -> RegistryResult<Self>

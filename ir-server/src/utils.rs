@@ -16,7 +16,7 @@ pub fn get_crate_root() -> String
     }
 
     // tentative, assumes the binary is in target/{build}/ directory
-    let argv0 = env::args().into_iter().next().unwrap();
+    let argv0 = env::args().next().unwrap();
     // unwrap() should be safe as argv0 should exist
     let mut workspace = canonicalize(Path::new(&argv0)).unwrap();
     for _ in 1..=3 {
@@ -43,22 +43,21 @@ pub(crate) fn load_certificates_from_pem<'a>(path: &str)
 {
     let file = File::open(path)?;
     let mut reader = BufReader::new(file);
-    rustls_pemfile::certs(&mut reader).into_iter().collect()
+    rustls_pemfile::certs(&mut reader).collect()
 }
 
 pub(crate) fn load_private_key_from_file<'a>(path: &str) -> RegistryResult<PrivateKeyDer<'a>>
 {
-    let file = File::open(&path)?;
+    let file = File::open(path)?;
     let mut reader = BufReader::new(file);
-    let mut keys = rustls_pemfile::pkcs8_private_keys(&mut reader)
-        .into_iter()
-        .collect::<Result<Vec<_>, _>>()?;
+    let mut keys =
+        rustls_pemfile::pkcs8_private_keys(&mut reader).collect::<Result<Vec<_>, _>>()?;
     match keys.len() {
-        0 => Err(RegistryError::PrivateKeyParsingError(format!(
+        0 => Err(RegistryError::PrivateKeyParsing(format!(
             "No PKCS8-encoded private key found in {path}"
         ))),
         1 => Ok(PrivateKeyDer::Pkcs8(keys.remove(0))),
-        _ => Err(RegistryError::PrivateKeyParsingError(format!(
+        _ => Err(RegistryError::PrivateKeyParsing(format!(
             "More than one PKCS8-encoded private key found in {path}"
         ))),
     }

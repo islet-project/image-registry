@@ -8,7 +8,7 @@ use crate::error::RegistryError;
 use crate::RegistryResult;
 
 macro_rules! err {
-    ($($arg:tt)+) => (Err(RegistryError::OciRegistryError(format!($($arg)+))))
+    ($($arg:tt)+) => (Err(RegistryError::OciRegistry(format!($($arg)+))))
 }
 
 pub fn verify<P: AsRef<Path>>(path: P, digest: &OciDigest) -> RegistryResult<bool>

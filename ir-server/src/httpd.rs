@@ -11,7 +11,7 @@ use crate::registry::ImageRegistry;
 use crate::tls;
 use crate::RegistryResult;
 
-static NOT_FOUND: (http::StatusCode, &'static str) = (
+static NOT_FOUND: (http::StatusCode, &str) = (
     http::StatusCode::NOT_FOUND,
     "In the beginning there was darkness... Or was it 404? I can't remember.",
 );
@@ -41,7 +41,8 @@ pub async fn run<T: ImageRegistry + 'static>(reg: T) -> RegistryResult<()>
     debug!("Binding address: {}", address);
     let listener = tokio::net::TcpListener::bind(address).await?;
 
-    match Config::readu().tls {
+    let tls = { Config::readu().tls.clone() };
+    match tls {
         Protocol::NoTls => axum::serve(listener, app).await?,
         Protocol::Tls => tls::serve_tls(listener, app).await?,
         Protocol::RaTls => tls::serve_ratls(listener, app).await?,
@@ -118,7 +119,7 @@ async fn http_get(
         return NOT_FOUND.into_response();
     }
 
-    let uuid = Uuid::parse_str(&v[0]).unwrap_or(Uuid::default());
+    let uuid = Uuid::parse_str(v[0]).unwrap_or_default();
     let registry = reg.read().await;
     match v[1].to_lowercase().as_str() {
         "json" => {

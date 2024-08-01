@@ -9,29 +9,21 @@ const SHA256_LEN: usize = 64;
 const SHA512_LEN: usize = 128;
 
 macro_rules! err {
-    ($($arg:tt)+) => (Err(RegistryError::OciRegistryError(format!($($arg)+))))
+    ($($arg:tt)+) => (Err(RegistryError::OciRegistry(format!($($arg)+))))
 }
 
-#[derive(Eq, Hash)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct Digest
 {
     algo: String,
     hash: String,
 }
 
-impl PartialEq for Digest
-{
-    fn eq(&self, other: &Self) -> bool
-    {
-        self.to_string() == other.to_string()
-    }
-}
-
 impl Display for Digest
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
     {
-        <Self as Debug>::fmt(&self, f)
+        <Self as Debug>::fmt(self, f)
     }
 }
 
@@ -49,7 +41,7 @@ impl TryFrom<&String> for Digest
 
     fn try_from(value: &String) -> Result<Self, Self::Error>
     {
-        Digest::try_from(&value as &str)
+        Digest::try_from(value as &str)
     }
 }
 
@@ -78,19 +70,19 @@ impl TryFrom<&str> for Digest
     }
 }
 
-impl Into<String> for Digest
+impl From<Digest> for String
 {
-    fn into(self) -> String
+    fn from(value: Digest) -> Self
     {
-        self.algo + ":" + &self.hash
+        value.algo + ":" + &value.hash
     }
 }
 
-impl Into<PathBuf> for Digest
+impl From<Digest> for PathBuf
 {
-    fn into(self) -> PathBuf
+    fn from(value: Digest) -> Self
     {
-        [self.algo, self.hash].iter().collect()
+        [value.algo, value.hash].iter().collect()
     }
 }
 
@@ -113,9 +105,8 @@ impl Digest
             a => err!("Wrong hash algorithm: {}", a)?,
         }
 
-        hex::decode(&hash).map_err(|e| {
-            RegistryError::OciRegistryError(format!("Incorrect hash string: {}", e))
-        })?;
+        hex::decode(&hash)
+            .map_err(|e| RegistryError::OciRegistry(format!("Incorrect hash string: {}", e)))?;
 
         Ok(Digest { algo, hash })
     }
@@ -133,11 +124,6 @@ impl Digest
     pub fn get_hash(&self) -> &str
     {
         &self.hash
-    }
-
-    pub fn to_string(&self) -> String
-    {
-        format!("{}:{}", self.algo, self.hash)
     }
 
     pub fn to_path(&self) -> PathBuf
