@@ -101,7 +101,7 @@ fn build_config(conn: ConnectionArgs) -> Config {
 }
 
 #[tokio::main]
-async fn main() -> () {
+async fn main() {
     env_logger::init_from_env(env_logger::Env::default().default_filter_or("debug"));
 
     let cli = Cli::parse();

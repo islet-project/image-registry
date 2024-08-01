@@ -13,16 +13,16 @@ impl ServiceFile {
 
     pub fn get_filename(&self) -> String {
         match self {
-            Self::ImageArchive(uuid) => format!("{}.{}", uuid.to_string(), Self::IMAGE_FILE_EXT),
+            Self::ImageArchive(uuid) => format!("{}.{}", uuid, Self::IMAGE_FILE_EXT),
             Self::ImageManifest(uuid) => {
-                format!("{}.{}", uuid.to_string(), Self::MANIFEST_FILE_EXT)
+                format!("{}.{}", uuid, Self::MANIFEST_FILE_EXT)
             }
         }
     }
 }
 
-pub(crate) const HOST_PROTOCOL_SECURE_SCHEME: &'static str = "https://";
-pub(crate) const HOST_PROTOCOL_NONSECURE_SCHEME: &'static str = "http://";
+pub(crate) const HOST_PROTOCOL_SECURE_SCHEME: &str = "https://";
+pub(crate) const HOST_PROTOCOL_NONSECURE_SCHEME: & str = "http://";
 
 pub struct ServiceUrl {
     scheme:String,
@@ -33,7 +33,7 @@ impl ServiceUrl {
     const REGISTRY_PATH: &'static str = "image/";
 
     /// Scheme should be "http://" or "https://".
-    /// Use Config::scheme() to get proper scheme for your connection.
+    /// Use Config::scheme() to get proper scheme for connection.
     pub fn init(scheme: String, host: String) -> Self {
         Self { scheme, host }
     }

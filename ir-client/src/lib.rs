@@ -35,7 +35,7 @@ impl Client {
                 let reqwest_client = ReqwestClient::builder()
                         .use_preconfigured_tls(client_config)
                         .build()
-                    .map_err(|e| Error::into_config(e))?;
+                    .map_err(Error::into_config)?;
                 Ok(Self {
                     url,
                     reqwest_client,
