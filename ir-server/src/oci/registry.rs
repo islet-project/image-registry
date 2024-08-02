@@ -64,14 +64,12 @@ impl Registry
 #[async_trait]
 impl ImageRegistry for Registry
 {
-    fn get_tags(&self, app: &str) -> Vec<String>
+    fn get_tags(&self, app: &str) -> Option<Vec<String>>
     {
-        let Some(app) = self.apps.get(app) else {
-            return Vec::new();
-        };
+        let app = self.apps.get(app)?;
 
         let tags = app.get_tags();
-        tags.keys().map(|k| k.to_string()).collect()
+        Some(tags.keys().map(|k| k.to_string()).collect())
     }
 
     async fn get_manifest(&self, app: &str, reference: &str) -> Option<io::ReaderStream<fs::File>>

@@ -1,10 +1,10 @@
 use axum::{body, extract, http, response::IntoResponse, routing, Json, Router};
 use log::{debug, info};
+use serde_json::json;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
-use uuid::Uuid;
 
 use crate::config::{Config, Protocol};
 use crate::registry::ImageRegistry;
@@ -56,96 +56,109 @@ async fn fallback() -> (http::StatusCode, &'static str)
     NOT_FOUND
 }
 
-#[allow(dead_code)]
-async fn get_support(extract::State(_reg): extract::State<SafeReg>) -> impl IntoResponse
+async fn get_support() -> impl IntoResponse
 {
-    (http::StatusCode::NOT_IMPLEMENTED, "NI: GET support").into_response()
+    (http::StatusCode::OK, "OCI Distribution Spec V2 supported").into_response()
 }
 
-#[allow(dead_code)]
-async fn get_tags(extract::State(_reg): extract::State<SafeReg>) -> impl IntoResponse
-{
-    (http::StatusCode::NOT_IMPLEMENTED, "NI: GET tags").into_response()
-}
-
-#[allow(dead_code)]
-async fn get_manifest(
-    extract::State(_reg): extract::State<SafeReg>,
-    extract::Path((name, reference)): extract::Path<(String, String)>,
-) -> impl IntoResponse
-{
-    let msg = format!("NI: GET manifest; name={}, reference={}", name, reference);
-    (http::StatusCode::NOT_IMPLEMENTED, msg).into_response()
-}
-
-#[allow(dead_code)]
-async fn head_manifest(
-    extract::State(_reg): extract::State<SafeReg>,
-    extract::Path((name, reference)): extract::Path<(String, String)>,
-) -> impl IntoResponse
-{
-    let msg = format!("NI: HEAD manifest; name={}, reference={}", name, reference);
-    (http::StatusCode::NOT_IMPLEMENTED, msg).into_response()
-}
-
-#[allow(dead_code)]
-async fn get_blob(
-    extract::State(_reg): extract::State<SafeReg>,
-    extract::Path((name, digest)): extract::Path<(String, String)>,
-) -> impl IntoResponse
-{
-    let msg = format!("NI: GET blob; name={}, digest={}", name, digest);
-    (http::StatusCode::NOT_IMPLEMENTED, msg).into_response()
-}
-
-#[allow(dead_code)]
-async fn head_blob(
-    extract::State(_reg): extract::State<SafeReg>,
-    extract::Path((name, digest)): extract::Path<(String, String)>,
-) -> impl IntoResponse
-{
-    let msg = format!("NI: HEAD blob; name={}, digest={}", name, digest);
-    (http::StatusCode::NOT_IMPLEMENTED, msg).into_response()
-}
-
-#[allow(dead_code)]
-async fn http_get(
-    extract::Path(file): extract::Path<String>,
+async fn get_tags(
     extract::State(reg): extract::State<SafeReg>,
+    extract::Path(name): extract::Path<String>,
 ) -> impl IntoResponse
 {
-    let v: Vec<&str> = file.split('.').collect();
-    if v.len() != 2 {
-        return NOT_FOUND.into_response();
-    }
-
-    let uuid = Uuid::parse_str(v[0]).unwrap_or_default();
     let registry = reg.read().await;
-    match v[1].to_lowercase().as_str() {
-        "json" => {
-            let tags = registry.get_tags("");
-            info!("Manifest for {} found and served", uuid);
-            Json(tags).into_response()
-        }
-        ext @ "tgz" => {
-            if let Some(stream) = registry.get_manifest("", "").await {
-                let body = body::Body::from_stream(stream);
+    let tags = registry.get_tags(&name);
 
-                let headers = [
-                    (http::header::CONTENT_TYPE, "application/octet-stream"),
-                    (
-                        http::header::CONTENT_DISPOSITION,
-                        &format!("attachment; filename=\"{}.{}\"", uuid, ext),
-                    ),
-                ];
+    let Some(tags) = tags else {
+        return NOT_FOUND.into_response();
+    };
 
-                info!("Image for {} found and served", uuid);
-                (headers, body).into_response()
-            } else {
-                info!("Image for {} not found", uuid);
-                (http::StatusCode::NOT_FOUND, "Image not found").into_response()
-            }
-        }
-        _ => NOT_FOUND.into_response(),
-    }
+    let payload = json!({
+        "name": name,
+        "tags": tags,
+    });
+
+    info!("Tags for \"{}\" found and served", name);
+    Json(payload).into_response()
+}
+
+async fn get_manifest(
+    extract::State(reg): extract::State<SafeReg>,
+    extract::Path((name, reference)): extract::Path<(String, String)>,
+) -> impl IntoResponse
+{
+    let registry = reg.read().await;
+    let manifest = registry.get_manifest(&name, &reference).await;
+
+    let Some(stream) = manifest else {
+        return NOT_FOUND.into_response();
+    };
+
+    let body = body::Body::from_stream(stream);
+    let headers = [(http::header::CONTENT_TYPE, "application/json")];
+
+    info!(
+        "Manifest \"{}\" for \"{}\" found and served",
+        reference, name
+    );
+    (headers, body).into_response()
+}
+
+async fn head_manifest(
+    extract::State(reg): extract::State<SafeReg>,
+    extract::Path((name, reference)): extract::Path<(String, String)>,
+) -> impl IntoResponse
+{
+    let registry = reg.read().await;
+    let manifest = registry.get_manifest(&name, &reference).await;
+
+    if manifest.is_none() {
+        return NOT_FOUND.into_response();
+    };
+
+    let msg = format!("Manifest \"{}\" for \"{}\" found", reference, name);
+    info!("{}", msg);
+    msg.into_response()
+}
+
+async fn get_blob(
+    extract::State(reg): extract::State<SafeReg>,
+    extract::Path((name, digest)): extract::Path<(String, String)>,
+) -> impl IntoResponse
+{
+    let registry = reg.read().await;
+    let blob = registry.get_blob(&name, &digest).await;
+
+    let Some(stream) = blob else {
+        return NOT_FOUND.into_response();
+    };
+
+    let body = body::Body::from_stream(stream);
+    let headers = [
+        (http::header::CONTENT_TYPE, "application/octet-stream"),
+        (
+            http::header::CONTENT_DISPOSITION,
+            &format!("attachment; filename=\"{}\"", digest),
+        ),
+    ];
+
+    info!("Blob \"{}\" for \"{}\" found and served", digest, name);
+    (headers, body).into_response()
+}
+
+async fn head_blob(
+    extract::State(reg): extract::State<SafeReg>,
+    extract::Path((name, digest)): extract::Path<(String, String)>,
+) -> impl IntoResponse
+{
+    let registry = reg.read().await;
+    let blob = registry.get_blob(&name, &digest).await;
+
+    if blob.is_none() {
+        return NOT_FOUND.into_response();
+    };
+
+    let msg = format!("Blob \"{}\" for \"{}\" found", digest, name);
+    info!("{}", msg);
+    msg.into_response()
 }

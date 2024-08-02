@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::fs;
 use std::sync::{PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
@@ -119,7 +117,6 @@ impl Config
 
 // First usage of singleton must happen before any threads are created
 
-#[allow(dead_code)]
 type LockResult<Guard> = Result<Guard, PoisonError<Guard>>;
 
 impl Config
