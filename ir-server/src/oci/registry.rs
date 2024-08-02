@@ -77,15 +77,15 @@ impl ImageRegistry for Registry
         let app = self.apps.get(app)?;
 
         // assume that reference is a digest first
-        let path = match Digest::try_from(reference) {
+        let content = match Digest::try_from(reference) {
             Ok(digest) => app.get_manifests().get(&digest)?,
             Err(_) => app.get_tags().get(reference)?,
         };
 
-        let file = match fs::File::open(path).await {
+        let file = match fs::File::open(&content.path).await {
             Ok(file) => file,
             Err(err) => {
-                error!("Error opening \"{}\": {}", path.display(), err);
+                error!("Error opening \"{}\": {}", content.path.display(), err);
                 return None;
             }
         };
@@ -97,15 +97,15 @@ impl ImageRegistry for Registry
     {
         let a = self.apps.get(app)?;
 
-        let path = match Digest::try_from(digest) {
+        let content = match Digest::try_from(digest) {
             Ok(digest) => a.get_blobs().get(&digest)?,
             Err(_) => return None,
         };
 
-        let file = match fs::File::open(path).await {
+        let file = match fs::File::open(&content.path).await {
             Ok(file) => file,
             Err(err) => {
-                error!("Error opening \"{}\": {}", path.display(), err);
+                error!("Error opening \"{}\": {}", content.path.display(), err);
                 return None;
             }
         };
