@@ -12,7 +12,7 @@ macro_rules! err {
     ($($arg:tt)+) => (Err(RegistryError::OciRegistry(format!($($arg)+))))
 }
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Clone)]
 pub struct Digest
 {
     algo: String,

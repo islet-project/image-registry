@@ -21,13 +21,22 @@ macro_rules! err {
     ($($arg:tt)+) => (Err(RegistryError::OciRegistry(format!($($arg)+))))
 }
 
+#[derive(Debug, Clone)]
+pub(super) struct Content
+{
+    pub(super) path: PathBuf,
+    pub(super) size: u64,
+    pub(super) digest: String,
+    pub(super) media_type: String,
+}
+
 #[derive(Debug, Default)]
 pub(super) struct Application
 {
     path: PathBuf,
-    tags: HashMap<String, PathBuf>,
-    manifests: HashMap<Digest, PathBuf>,
-    blobs: HashMap<Digest, PathBuf>,
+    tags: HashMap<String, Content>,
+    manifests: HashMap<Digest, Content>,
+    blobs: HashMap<Digest, Content>,
 }
 
 impl Application
@@ -65,11 +74,19 @@ impl Application
             err!("The requested digest doesn't exist: {}", digest)?;
         }
 
-        let desc_size: u64 = desc.size().try_into().or(err!("File size negative"))?;
+        let size: u64 = desc.size().try_into().or(err!("File size negative"))?;
         let file_size = std::fs::metadata(&path)?.len();
-        if file_size != desc_size {
-            err!("Wrong file length: {}, expected: {}", file_size, desc_size)?;
+        if file_size != size {
+            err!("Wrong file length: {}, expected: {}", file_size, size)?;
         }
+
+        let media_type = desc.media_type();
+        let content = Content {
+            path: path.clone(),
+            size,
+            digest: digest.to_string(),
+            media_type: media_type.to_string(),
+        };
 
         // For layout index descriptors do two additional things:
         // - verify hashes of linked manifests
@@ -84,26 +101,25 @@ impl Application
                     if !tag::verify(tag) {
                         err!("Tag \"{}\" doesn't match: {}", tag, tag::PATTERN)?;
                     }
-                    self.tags.insert(tag.to_string(), path.clone());
+                    self.tags.insert(tag.to_string(), content.clone());
                 }
             }
         }
 
-        let media_type = desc.media_type();
         match media_type {
             MediaType::ImageIndex => {
                 self.import_index(&path, false)?;
-                self.manifests.insert(digest, path);
+                self.manifests.insert(digest, content);
             }
             MediaType::ImageManifest => {
                 self.import_manifest(&path)?;
-                self.manifests.insert(digest, path);
+                self.manifests.insert(digest, content);
             }
             MediaType::ImageConfig
             | MediaType::ImageLayer
             | MediaType::ImageLayerGzip
             | MediaType::ImageLayerZstd => {
-                self.blobs.insert(digest, path);
+                self.blobs.insert(digest, content);
             }
             m => err!("Unsupported media type: {}", m)?,
         }
@@ -156,22 +172,22 @@ impl Application
         }
     }
 
-    pub fn get_tags(&self) -> &HashMap<String, PathBuf>
+    pub(super) fn get_tags(&self) -> &HashMap<String, Content>
     {
         &self.tags
     }
 
-    pub fn get_manifests(&self) -> &HashMap<Digest, PathBuf>
+    pub(super) fn get_manifests(&self) -> &HashMap<Digest, Content>
     {
         &self.manifests
     }
 
-    pub fn get_blobs(&self) -> &HashMap<Digest, PathBuf>
+    pub(super) fn get_blobs(&self) -> &HashMap<Digest, Content>
     {
         &self.blobs
     }
 
-    pub fn import(path: &Path) -> RegistryResult<Self>
+    pub(super) fn import(path: &Path) -> RegistryResult<Self>
     {
         info!("Loading application from: \"{}\"", path.display());
 
