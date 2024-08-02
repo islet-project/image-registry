@@ -17,6 +17,7 @@ tokio = { version = "*", features = ["full"] }
 tokio-util = {version = "*", features = ["io"]}
 pin-project = "*"
 futures = "*"
+regex = "*"
 
 oci-spec = "*"
 

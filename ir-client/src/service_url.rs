@@ -1,51 +1,90 @@
 use crate::error::Error;
-use url::Url;
-use uuid::Uuid;
+use crate::reference::{Digest, Reference};
 
-pub enum ServiceFile {
-    ImageManifest(Uuid),
-    ImageArchive(Uuid),
+use url::Url;
+
+pub(crate) enum ServiceFile {
+    Manifest(Reference),
+    Blob(Digest),
 }
 
 impl ServiceFile {
-    const MANIFEST_FILE_EXT: &'static str = "json";
-    const IMAGE_FILE_EXT: &'static str = "tgz";
+    const MANIFEST_PATH: &'static str = "manifests/";
+    const BLOBS_PATH: &'static str = "blobs/";
 
-    pub fn get_filename(&self) -> String {
+    pub fn get_file_uri(&self) -> String {
         match self {
-            Self::ImageArchive(uuid) => format!("{}.{}", uuid, Self::IMAGE_FILE_EXT),
-            Self::ImageManifest(uuid) => {
-                format!("{}.{}", uuid, Self::MANIFEST_FILE_EXT)
-            }
+            Self::Manifest(reference) => format!("{}{}", Self::MANIFEST_PATH, reference.as_str()),
+            Self::Blob(digest) => format!("{}{}", Self::BLOBS_PATH, digest.as_str()),
         }
     }
 }
 
-pub(crate) const HOST_PROTOCOL_SECURE_SCHEME: &str = "https://";
-pub(crate) const HOST_PROTOCOL_NONSECURE_SCHEME: & str = "http://";
+pub(crate) struct Scheme {
+    scheme: &'static str,
+}
 
-pub struct ServiceUrl {
-    scheme:String,
+impl Scheme {
+    pub const fn init(scheme: &'static str) -> Self {
+        Self {
+            scheme
+        }
+    }
+
+    pub const fn as_str(&self) -> &'static str {
+        self.scheme
+    }
+}
+
+pub(crate) const HTTPS_SCHEME: Scheme = Scheme::init("https://");
+pub(crate) const HTTP_SCHEME: Scheme = Scheme::init("http://");
+
+impl PartialEq<&str> for Scheme {
+    fn eq(&self, other: &&str) -> bool {
+        &self.scheme == other || &self.scheme.split_once(':').unwrap().0 == other
+    }
+}
+
+fn make_url(user: &str, scheme: &Scheme) -> Result<Url, &'static str> {
+    match Url::parse(user) {
+        Ok(user_parsed) => {
+            if user_parsed.has_host() {
+                if scheme == &user_parsed.scheme() {
+                    Ok(user_parsed)
+                } else {
+                    Err("User passed improper scheme")
+                }
+            } else {
+                Url::parse(&format!("{}{}", scheme.as_str(), user)).map_err(|_| "failed to make url")
+            }
+        },
+        Err(_) => {
+            Url::parse(&format!("{}{}", scheme.as_str(), user)).map_err(|_| "failed to make url")
+        }
+    }
+}
+
+pub(crate) struct ServiceUrl {
+    scheme: &'static Scheme,
     host: String,
 }
 
 impl ServiceUrl {
-    const REGISTRY_PATH: &'static str = "image/";
+    const VERSION_PATH: &'static str = "v2/";
 
     /// Scheme should be "http://" or "https://".
     /// Use Config::scheme() to get proper scheme for connection.
-    pub fn init(scheme: String, host: String) -> Self {
+    pub fn init(scheme: &'static Scheme, host: String) -> Self {
         Self { scheme, host }
     }
 
-    fn host(&self) -> String {
-        self.scheme.clone() + &self.host
+    fn host_url(&self) -> Url {
+        make_url(&self.host, &self.scheme).unwrap()
 
     }
 
-    pub fn get_url(&self, file: ServiceFile) -> Result<Url, Error> {
-        let url =
-            Url::parse(&self.host()).inspect_err(|e| println!("Failed to parse host: {}", e))?;
-        Ok(url.join(Self::REGISTRY_PATH)?.join(&file.get_filename())?)
+    pub fn get_url_path(&self, app_name: &str, file: ServiceFile) -> Result<Url, Error> {
+        let app_name_path = &format!("{}/", app_name);
+        Ok(self.host_url().join(Self::VERSION_PATH)?.join(&app_name_path)?.join(&file.get_file_uri())?)
     }
 }

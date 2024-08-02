@@ -1,5 +1,4 @@
 use std::io::Error as IOError;
-use url::ParseError;
 
 #[derive(Debug)]
 pub enum Error {
@@ -11,11 +10,13 @@ pub enum Error {
     ConnectionError,
     IOError(IOError),
     StatusError(u16),
+    DigestInvalidError,
+    ReferenceInvalidError,
     UnknownError,
 }
 
-impl From<ParseError> for Error {
-    fn from(value: ParseError) -> Self {
+impl From<url::ParseError> for Error {
+    fn from(value: url::ParseError) -> Self {
         Error::UrlParsingError(value.to_string())
     }
 }
@@ -25,6 +26,7 @@ impl From<IOError> for Error {
         Error::IOError(value)
     }
 }
+
 
 impl Error {
     pub fn into_config(reqwest_error: reqwest::Error) -> Self {
