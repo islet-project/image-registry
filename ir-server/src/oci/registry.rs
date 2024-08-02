@@ -4,12 +4,11 @@ use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::path::Path;
 use tokio::fs;
-use tokio_util::io;
 
 use super::application::Application;
 use super::digest::Digest;
 use crate::error::RegistryError;
-use crate::registry::ImageRegistry;
+use crate::registry::{ImageRegistry, Payload};
 use crate::RegistryResult;
 
 macro_rules! err {
@@ -72,7 +71,7 @@ impl ImageRegistry for Registry
         Some(tags.keys().map(|k| k.to_string()).collect())
     }
 
-    async fn get_manifest(&self, app: &str, reference: &str) -> Option<io::ReaderStream<fs::File>>
+    async fn get_manifest(&self, app: &str, reference: &str) -> Option<Payload>
     {
         let app = self.apps.get(app)?;
 
@@ -90,10 +89,17 @@ impl ImageRegistry for Registry
             }
         };
 
-        Some(tokio_util::io::ReaderStream::new(file))
+        let payload = Payload {
+            stream: tokio_util::io::ReaderStream::new(file),
+            size: content.size,
+            digest: content.digest.clone(),
+            media_type: content.media_type.clone(),
+        };
+
+        Some(payload)
     }
 
-    async fn get_blob(&self, app: &str, digest: &str) -> Option<io::ReaderStream<fs::File>>
+    async fn get_blob(&self, app: &str, digest: &str) -> Option<Payload>
     {
         let a = self.apps.get(app)?;
 
@@ -110,6 +116,13 @@ impl ImageRegistry for Registry
             }
         };
 
-        Some(tokio_util::io::ReaderStream::new(file))
+        let payload = Payload {
+            stream: tokio_util::io::ReaderStream::new(file),
+            size: content.size,
+            digest: content.digest.clone(),
+            media_type: content.media_type.clone(),
+        };
+
+        Some(payload)
     }
 }
