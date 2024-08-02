@@ -1,3 +1,4 @@
+use axum::http::HeaderName;
 use axum::{body, extract, http, response::IntoResponse, routing, Json, Router};
 use log::{debug, info};
 use serde_json::json;
@@ -15,6 +16,8 @@ static NOT_FOUND: (http::StatusCode, &str) = (
     http::StatusCode::NOT_FOUND,
     "In the beginning there was darkness... Or was it 404? I can't remember.",
 );
+
+const HEADER_DIGEST: HeaderName = HeaderName::from_static("docker-content-digest");
 
 type SafeReg = Arc<RwLock<dyn ImageRegistry>>;
 
@@ -95,7 +98,11 @@ async fn get_manifest(
     };
 
     let body = body::Body::from_stream(payload.stream);
-    let headers = [(http::header::CONTENT_TYPE, "application/json")];
+    let headers = [
+        (http::header::CONTENT_TYPE, &payload.media_type),
+        (http::header::CONTENT_LENGTH, &format!("{}", payload.size)),
+        (HEADER_DIGEST, &payload.digest),
+    ];
 
     info!(
         "Manifest \"{}\" for \"{}\" found and served",
@@ -135,11 +142,9 @@ async fn get_blob(
 
     let body = body::Body::from_stream(payload.stream);
     let headers = [
-        (http::header::CONTENT_TYPE, "application/octet-stream"),
-        (
-            http::header::CONTENT_DISPOSITION,
-            &format!("attachment; filename=\"{}\"", digest),
-        ),
+        (http::header::CONTENT_TYPE, &payload.media_type),
+        (http::header::CONTENT_LENGTH, &format!("{}", payload.size)),
+        (HEADER_DIGEST, &payload.digest),
     ];
 
     info!("Blob \"{}\" for \"{}\" found and served", digest, name);
