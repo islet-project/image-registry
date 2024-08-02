@@ -1,6 +1,7 @@
 use std::sync::Arc;
+use std::io::Read;
 
-use ir_client::{config::Config, Client};
+use ir_client::{config::Config, reference::{Digest, Reference}, client::Client};
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use log::info;
@@ -47,14 +48,14 @@ struct Cli {
 #[derive(Subcommand, Debug)]
 enum Commands {
     GetManifest(GetManifestArgs),
-    GetImage(GetImageArgs),
+    GetBlob(GetBlobArgs),
 }
 
 #[derive(Args, Debug)]
 struct GetManifestArgs {
-    /// Uuid of image
+    /// Reference of manifest [digest or tag]
     #[arg(short, long)]
-    uuid: String,
+    reference: String,
 
     /// filename to write image JSON [default: ./{uuid}.json]
     #[arg(short, long)]
@@ -62,10 +63,10 @@ struct GetManifestArgs {
 }
 
 #[derive(Args, Debug)]
-struct GetImageArgs {
-    // Uuid of image
+struct GetBlobArgs {
+    // Digest of blob
     #[arg(short, long)]
-    uuid: String,
+    digest: String,
 
     /// filename to write image archive [default: ./{uuid}.tar.gz]
     #[arg(short, long)]
@@ -110,25 +111,19 @@ fn main() {
 
     match &cli.command {
         Commands::GetManifest(args) => {
-            client.get_and_save_manifest(
-                uuid::Uuid::parse_str(&args.uuid).unwrap(),
-                args.out.clone()
-            ).unwrap();
-            let manifest = client
-                .get_manifest(uuid::Uuid::parse_str(&args.uuid).unwrap())
-                .unwrap();
-            info!("Manifest: {:?}", manifest);
-        }
-        Commands::GetImage(args) => {
-            client.get_and_save_image(
-                uuid::Uuid::parse_str(&args.uuid).unwrap(),
-                args.out.clone()
-            ).unwrap();
-            let image_bytes = client
-                .get_image(uuid::Uuid::parse_str(&args.uuid).unwrap())
-                .unwrap();
+            let reference = Reference::try_from(args.reference.as_str()).unwrap();
+            let manifest = client.get_manifest("com.samsung.example.app", reference).unwrap();
 
-            info!("Image size {}", image_bytes.len());
+            info!("{}", manifest);
+        },
+        Commands::GetBlob(args) => {
+            let digest = Digest::try_from(args.digest.as_str()).unwrap();
+            let mut blob_reader = client.get_blob_reader("com.samsung.example.app", digest).unwrap();
+
+            let mut blob_buf = Vec::new();
+            let blob_size = blob_reader.read_to_end(&mut blob_buf).unwrap();
+
+            info!("blob size = {}", blob_size);
         }
     }
 }

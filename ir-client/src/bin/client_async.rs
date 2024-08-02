@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use ir_client::{async_client::Client, config::Config};
+use ir_client::{async_client::Client, config::Config, reference::{Digest, Reference}};
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use log::info;
@@ -48,14 +48,14 @@ struct Cli {
 #[derive(Subcommand, Debug)]
 enum Commands {
     GetManifest(GetManifestArgs),
-    GetImage(GetImageArgs),
+    GetBlob(GetBlobArgs),
 }
 
 #[derive(Args, Debug)]
 struct GetManifestArgs {
-    /// Uuid of image
+    /// Reference of manifest [digest or tag]
     #[arg(short, long)]
-    uuid: String,
+    reference: String,
 
     /// filename to write image JSON [default: ./{uuid}.json]
     #[arg(short, long)]
@@ -63,10 +63,10 @@ struct GetManifestArgs {
 }
 
 #[derive(Args, Debug)]
-struct GetImageArgs {
-    // Uuid of image
+struct GetBlobArgs {
+    // Digest of blob
     #[arg(short, long)]
-    uuid: String,
+    digest: String,
 
     /// filename to write image archive [default: ./{uuid}.tar.gz]
     #[arg(short, long)]
@@ -112,21 +112,23 @@ async fn main() {
     println!("{:?}", cli.command);
     match &cli.command {
         Commands::GetManifest(args) => {
+            let reference = Reference::try_from(args.reference.as_str()).unwrap();
             let manifest = client
-                .get_manifest(uuid::Uuid::parse_str(&args.uuid).unwrap())
+                .get_manifest("com.samsung.example.app", reference)
                 .await
                 .unwrap();
-            info!("Manifest: {:?}", manifest);
+            info!("{}", manifest);
         }
-        Commands::GetImage(args) => {
-            let mut image_bytes = client
-                .get_image_stream(uuid::Uuid::parse_str(&args.uuid).unwrap())
+        Commands::GetBlob(args) => {
+            let digest = Digest::try_from(args.digest.as_str()).unwrap();
+            let mut blob_reader = client
+                .get_blob_stream("com.samsung.example.app", digest)
                 .await
                 .unwrap();
 
             let mut buf = Vec::new();
-            image_bytes.read_to_end(&mut buf).await.unwrap();
-            info!("Image size {}", buf.len());
+            blob_reader.read_to_end(&mut buf).await.unwrap();
+            info!("Image size = {}", buf.len());
         }
     }
 }
