@@ -3,7 +3,6 @@ pub enum RegistryError
 {
     IO(std::io::Error),
     Rustls(tokio_rustls::rustls::Error),
-    SerdeYaml(serde_yaml::Error),
     SerdeJson(serde_json::Error),
     OciSpec(oci_spec::OciSpecError),
     PrivateKeyParsing(String),
@@ -21,7 +20,6 @@ impl std::fmt::Display for RegistryError
         match self {
             RegistryError::IO(e) => write!(f, "IOError({:?})", e),
             RegistryError::Rustls(e) => write!(f, "RustlsError({:?})", e),
-            RegistryError::SerdeYaml(e) => write!(f, "SerdeYamlError({:?})", e),
             RegistryError::SerdeJson(e) => write!(f, "SerdeJsonError({:?})", e),
             RegistryError::OciSpec(e) => write!(f, "OciSpecError({:?}", e),
             RegistryError::PrivateKeyParsing(s) => write!(f, "PrivateKeyParsingError({})", s),
@@ -48,14 +46,6 @@ impl From<tokio_rustls::rustls::Error> for RegistryError
     fn from(value: tokio_rustls::rustls::Error) -> Self
     {
         Self::Rustls(value)
-    }
-}
-
-impl From<serde_yaml::Error> for RegistryError
-{
-    fn from(value: serde_yaml::Error) -> Self
-    {
-        Self::SerdeYaml(value)
     }
 }
 
