@@ -1,15 +1,20 @@
 use axum::http::HeaderName;
 use axum::{body, extract, http, response::IntoResponse, routing, Json, Router};
+use axum_extra::headers::Range;
+use axum_extra::TypedHeader;
+use hyper::Response;
 use log::{debug, info};
 use serde::Deserialize;
 use serde_json::json;
+use std::ops::Bound;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
 
 use crate::config::{Config, Protocol};
-use crate::registry::ImageRegistry;
+use crate::registry::{ImageRegistry, Payload};
+use crate::stream::StreamBytesExt;
 use crate::tls;
 use crate::RegistryResult;
 
@@ -58,6 +63,49 @@ pub async fn run<T: ImageRegistry + 'static>(reg: T) -> RegistryResult<()>
 async fn fallback() -> (http::StatusCode, &'static str)
 {
     NOT_FOUND
+}
+
+fn serve_file(payload: Payload, range: Option<TypedHeader<Range>>) -> Response<body::Body>
+{
+    if let Some(TypedHeader(range)) = range {
+        let ranges: Vec<_> = range.satisfiable_ranges(payload.size).collect();
+        match (ranges.len(), ranges[0]) {
+            // very basic implementation of "range: bytes=SKIP-" client header
+            (1, (Bound::Included(skip), Bound::Unbounded)) => {
+                let body = body::Body::from_stream(payload.stream.skip_bytes(skip as usize));
+                let headers = [
+                    (http::header::CONTENT_TYPE, &payload.media_type),
+                    (
+                        http::header::CONTENT_LENGTH,
+                        &format!("{}", payload.size - skip),
+                    ),
+                    (HEADER_DIGEST, &payload.digest),
+                    (
+                        http::header::CONTENT_RANGE,
+                        &format!("bytes {}-{}/{}", skip, payload.size - 1, payload.size),
+                    ),
+                ];
+                (http::StatusCode::PARTIAL_CONTENT, headers, body).into_response()
+            }
+            // reject all the other variants of partial content or multi-parts
+            _ => {
+                let headers = [(
+                    http::header::CONTENT_RANGE,
+                    &format!("bytes */{}", payload.size),
+                )];
+                let body = body::Body::empty();
+                (http::StatusCode::NOT_ACCEPTABLE, headers, body).into_response()
+            }
+        }
+    } else {
+        let headers = [
+            (http::header::CONTENT_TYPE, &payload.media_type),
+            (http::header::CONTENT_LENGTH, &format!("{}", payload.size)),
+            (HEADER_DIGEST, &payload.digest),
+        ];
+        let body = body::Body::from_stream(payload.stream);
+        (headers, body).into_response()
+    }
 }
 
 async fn get_support() -> impl IntoResponse
@@ -113,6 +161,7 @@ async fn get_tags(
 async fn get_manifest(
     extract::State(reg): extract::State<SafeReg>,
     extract::Path((name, reference)): extract::Path<(String, String)>,
+    range: Option<TypedHeader<Range>>,
 ) -> impl IntoResponse
 {
     let registry = reg.read().await;
@@ -122,18 +171,11 @@ async fn get_manifest(
         return NOT_FOUND.into_response();
     };
 
-    let body = body::Body::from_stream(payload.stream);
-    let headers = [
-        (http::header::CONTENT_TYPE, &payload.media_type),
-        (http::header::CONTENT_LENGTH, &format!("{}", payload.size)),
-        (HEADER_DIGEST, &payload.digest),
-    ];
-
     info!(
         "Manifest \"{}\" for \"{}\" found and served",
         reference, name
     );
-    (headers, body).into_response()
+    serve_file(payload, range)
 }
 
 async fn head_manifest(
@@ -156,6 +198,7 @@ async fn head_manifest(
 async fn get_blob(
     extract::State(reg): extract::State<SafeReg>,
     extract::Path((name, digest)): extract::Path<(String, String)>,
+    range: Option<TypedHeader<Range>>,
 ) -> impl IntoResponse
 {
     let registry = reg.read().await;
@@ -165,15 +208,8 @@ async fn get_blob(
         return NOT_FOUND.into_response();
     };
 
-    let body = body::Body::from_stream(payload.stream);
-    let headers = [
-        (http::header::CONTENT_TYPE, &payload.media_type),
-        (http::header::CONTENT_LENGTH, &format!("{}", payload.size)),
-        (HEADER_DIGEST, &payload.digest),
-    ];
-
     info!("Blob \"{}\" for \"{}\" found and served", digest, name);
-    (headers, body).into_response()
+    serve_file(payload, range)
 }
 
 async fn head_blob(

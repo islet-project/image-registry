@@ -3,6 +3,7 @@ mod error;
 mod httpd;
 mod oci;
 mod registry;
+mod stream;
 mod tls;
 mod utils;
 
