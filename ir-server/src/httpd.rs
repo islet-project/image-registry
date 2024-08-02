@@ -90,11 +90,11 @@ async fn get_manifest(
     let registry = reg.read().await;
     let manifest = registry.get_manifest(&name, &reference).await;
 
-    let Some(stream) = manifest else {
+    let Some(payload) = manifest else {
         return NOT_FOUND.into_response();
     };
 
-    let body = body::Body::from_stream(stream);
+    let body = body::Body::from_stream(payload.stream);
     let headers = [(http::header::CONTENT_TYPE, "application/json")];
 
     info!(
@@ -129,11 +129,11 @@ async fn get_blob(
     let registry = reg.read().await;
     let blob = registry.get_blob(&name, &digest).await;
 
-    let Some(stream) = blob else {
+    let Some(payload) = blob else {
         return NOT_FOUND.into_response();
     };
 
-    let body = body::Body::from_stream(stream);
+    let body = body::Body::from_stream(payload.stream);
     let headers = [
         (http::header::CONTENT_TYPE, "application/octet-stream"),
         (
