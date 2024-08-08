@@ -1,10 +1,13 @@
+use std::any::type_name;
+
 use crate::{
-    config::Config, error::Error, reference::{Digest, Reference}, service_url::{ServiceFile, ServiceUrl}
+    config::Config, error::Error, reference::{Digest, Reference, Tag}, service_url::{ServiceFile, ServiceUrl, TagList}
 };
 use futures::stream::TryStreamExt;
 use log::{debug, error, info};
-use oci_spec::image::ImageManifest;
+use oci_spec::{distribution::TagList as OciTagList, image::ImageManifest as OciImageManifest};
 use reqwest::{Client as ReqwestClient, Response};
+use serde::de::DeserializeOwned;
 use url::Url;
 
 pub struct Client {
@@ -39,25 +42,12 @@ impl Client {
         }
     }
 
-    pub async fn get_manifest(&self, app_name: &str, reference: Reference) -> Result<ImageManifest, Error> {
+    pub async fn get_manifest(&self, app_name: &str, reference: Reference) -> Result<OciImageManifest, Error> {
         let response = self
             .get_response(self.url.get_url_path(app_name, ServiceFile::Manifest(reference))?)
             .await?;
 
-        match response
-            .json::<ImageManifest>()
-            .await
-            .inspect_err(|e| error!("Failed  to parse JSON: {}", e))
-        {
-            Ok(manifest) => Ok(manifest),
-            Err(err) => {
-                if err.is_decode() {
-                    Err(Error::JSONParsingError(err.to_string()))
-                } else {
-                    Err(Error::UnknownError)
-                }
-            }
-        }
+        Self::extract_json(response).await
     }
 
     pub async fn get_blob_stream(&self, app_name: &str, digest: Digest) -> Result<impl tokio::io::AsyncRead, Error> {
@@ -67,6 +57,40 @@ impl Client {
 
         let stream = response.bytes_stream().map_err(std::io::Error::other);
         Ok(tokio_util::io::StreamReader::new(stream))
+    }
+
+    pub async fn list_tags(&self, app_name: &str) -> Result<OciTagList, Error> {
+        let request_url = self.url.get_url_path(app_name, ServiceFile::TagList(TagList::new()))?;
+        let response = self
+            .get_response(request_url)
+            .await?;
+
+        Self::extract_json(response).await
+    }
+
+    pub async fn list_tags_with_options(&self, app_name: &str, n: Option<usize>, last: Option<Tag>) -> Result<OciTagList, Error> {
+        let tag_list = TagList::with_options(n, last);
+
+        let request_url = self.url.get_url_path(app_name, ServiceFile::TagList(tag_list))?;
+        let response = self
+            .get_response(request_url)
+            .await?;
+
+        Self::extract_json(response).await
+    }
+
+    async fn extract_json<T: DeserializeOwned>(response: Response) -> Result<T, Error> {
+        match response.json::<T>().await {
+            Ok(value) => Ok(value),
+            Err(err) => {
+                error!("Failed to parse {} as JSON", type_name::<T>());
+                if err.is_decode() {
+                    Err(Error::JSONParsingError(err.to_string()))
+                } else {
+                    Err(Error::UnknownError)
+                }
+            }
+        }
     }
 
     async fn get_response(&self, url: Url) -> Result<Response, Error> {

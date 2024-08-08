@@ -8,6 +8,8 @@ edition = "2021"
 [dependencies]
 url = "*"
 clap = { version = "*", features = ["derive"] }
+serde = "*"
+serde_json = "*"
 env_logger = "*"
 log = "*"
 tokio = { version = "*", features = ["full"] }

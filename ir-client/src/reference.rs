@@ -56,7 +56,7 @@ impl Tag {
         &self.0
     }
 
-    pub(crate) fn from_str(value: &str) -> Option<Self> {
+    fn from_str(value: &str) -> Option<Self> {
         let tag_re = Regex::new(Self::REGEX).expect("Tag regex is malformed");
         match tag_re.is_match(value) {
             true => Some(Tag(value.to_string())),
@@ -65,6 +65,13 @@ impl Tag {
                 None
             },
         }
+    }
+}
+
+impl TryFrom<&str> for Tag {
+    type Error = error::Error;
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Self::from_str(value).ok_or(Error::TagInvalidError)
     }
 }
 
@@ -80,7 +87,7 @@ impl TryFrom<&str> for Reference {
             return Ok(Self::Digest(digest));
         }
 
-        if let Some(tag) = Tag::from_str(value) {
+        if let Ok(tag) = Tag::try_from(value) {
             return Ok(Self::Tag(tag));
         }
 

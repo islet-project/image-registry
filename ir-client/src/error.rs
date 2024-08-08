@@ -6,11 +6,15 @@ pub enum Error {
     UrlParsingError(String),
     JSONParsingError(String),
     ManifestFormatError,
+
     ConnectionError,
     IOError(IOError),
     StatusError(u16),
-    DigestInvalidError,
+
     ReferenceInvalidError,
+    DigestInvalidError,
+    TagInvalidError,
+
     UnknownError,
 }
 

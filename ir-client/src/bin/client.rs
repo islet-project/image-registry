@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::io::Read;
 
-use ir_client::{config::Config, reference::{Digest, Reference}, client::Client};
+use ir_client::{client::Client, config::Config, reference::{Digest, Reference, Tag}};
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use log::info;
@@ -49,6 +49,7 @@ struct Cli {
 enum Commands {
     GetManifest(GetManifestArgs),
     GetBlob(GetBlobArgs),
+    ListTags(ListTagsArgs),
 }
 
 #[derive(Args, Debug)]
@@ -64,7 +65,7 @@ struct GetManifestArgs {
 
 #[derive(Args, Debug)]
 struct GetBlobArgs {
-    // Digest of blob
+    /// Digest of a blob
     #[arg(short, long)]
     digest: String,
 
@@ -72,6 +73,18 @@ struct GetBlobArgs {
     #[arg(short, long)]
     out: Option<String>,
 }
+
+#[derive(Args, Debug)]
+struct ListTagsArgs {
+    /// List only N tags
+    #[arg(short, long)]
+    n: Option<usize>,
+
+    /// Start listing tags after LAST
+    #[arg(short, long)]
+    last: Option<String>,
+}
+
 
 fn build_config(conn: ConnectionArgs) -> Config {
     match conn.tls {
@@ -124,6 +137,12 @@ fn main() {
             let blob_size = blob_reader.read_to_end(&mut blob_buf).unwrap();
 
             info!("blob size = {}", blob_size);
+        },
+        Commands::ListTags(args) => {
+            let last = args.last.clone().map(|user_tag| Tag::try_from(user_tag.as_str()).unwrap());
+            let tag_list = client.list_tags_with_options("com.samsung.example.app", args.n, last).unwrap();
+
+            info!("{}", serde_json::to_string_pretty(&tag_list).unwrap());
         }
     }
 }

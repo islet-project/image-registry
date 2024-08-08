@@ -1,22 +1,71 @@
 use crate::error::Error;
-use crate::reference::{Digest, Reference};
+use crate::reference::{Digest, Reference, Tag};
 
 use url::Url;
+
+pub(crate) struct TagList {
+    n: Option<usize>,
+    last: Option<Tag>,
+}
+
+impl TagList {
+    const LIST: &'static str = "list";
+    const N_QUERY: &'static str = "n";
+    const LAST_QUERY: &'static str = "last";
+
+    pub fn as_str(&self) -> &str {
+        Self::LIST
+    }
+
+    pub(crate) fn options(&self) -> Option<Vec<(String, String)>>{
+        let mut options = Vec::new();
+        if let Some(n) = &self.n {
+            options.push((Self::N_QUERY.to_string(), n.to_string()));
+        }
+        if let Some(last) = &self.last {
+            options.push((Self::LAST_QUERY.to_string(), last.as_str().to_string()));
+        }
+        if options.is_empty() {
+            None
+        } else {
+            Some(options)
+        }
+    }
+
+    pub fn new() -> Self {
+        Self { n: None, last: None }
+    }
+
+    pub fn with_options(n: Option<usize>, last: Option<Tag>) -> Self {
+        Self { n, last }
+    }
+}
 
 pub(crate) enum ServiceFile {
     Manifest(Reference),
     Blob(Digest),
+    TagList(TagList),
 }
 
 impl ServiceFile {
     const MANIFEST_PATH: &'static str = "manifests/";
     const BLOBS_PATH: &'static str = "blobs/";
+    const TAGS_PATH: &'static str = "tags/";
 
     pub fn get_file_uri(&self) -> String {
         match self {
             Self::Manifest(reference) => format!("{}{}", Self::MANIFEST_PATH, reference.as_str()),
             Self::Blob(digest) => format!("{}{}", Self::BLOBS_PATH, digest.as_str()),
+            Self::TagList(tag_list) => format!("{}{}", Self::TAGS_PATH, tag_list.as_str()),
         }
+    }
+
+    pub fn get_options(&self) -> Option<Vec<(String, String)>> {
+        if let Self::TagList(tag_list) = self {
+            return tag_list.options();
+        }
+
+        None
     }
 }
 
@@ -80,10 +129,17 @@ impl ServiceUrl {
     pub fn get_url_path(&self, app_name: &str, file: ServiceFile) -> Result<Url, Error> {
         let app_name_path = &format!("{}/", app_name);
 
-        let url = self
+        let mut url = self
             .base_url()?
             .join(app_name_path)?
             .join(&file.get_file_uri())?;
+
+        if let Some(options) = file.get_options() {
+            let mut append_queries = url.query_pairs_mut();
+            for (query_name, query_value) in options {
+                append_queries.append_pair(&query_name, &query_value);
+            }
+        }
 
         Ok(url)
     }
