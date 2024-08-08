@@ -101,6 +101,9 @@ impl Application
                     if !tag::verify(tag) {
                         err!("Tag \"{}\" doesn't match: {}", tag, tag::PATTERN)?;
                     }
+                    if self.tags.contains_key(tag) {
+                        err!("Tag \"{}\" is duplicated", tag)?;
+                    }
                     self.tags.insert(tag.to_string(), content.clone());
                 }
             }

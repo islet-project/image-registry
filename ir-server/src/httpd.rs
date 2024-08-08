@@ -1,6 +1,7 @@
 use axum::http::HeaderName;
 use axum::{body, extract, http, response::IntoResponse, routing, Json, Router};
 use log::{debug, info};
+use serde::Deserialize;
 use serde_json::json;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -64,17 +65,41 @@ async fn get_support() -> impl IntoResponse
     (http::StatusCode::OK, "OCI Distribution Spec V2 supported").into_response()
 }
 
+#[derive(Debug, Deserialize)]
+struct TagListParams
+{
+    n: Option<usize>,
+    last: Option<String>,
+}
+
 async fn get_tags(
     extract::State(reg): extract::State<SafeReg>,
     extract::Path(name): extract::Path<String>,
+    extract::Query(params): extract::Query<TagListParams>,
 ) -> impl IntoResponse
 {
     let registry = reg.read().await;
     let tags = registry.get_tags(&name);
 
-    let Some(tags) = tags else {
+    let Some(mut tags) = tags else {
         return NOT_FOUND.into_response();
     };
+
+    tags.sort_by(|a, b| {
+        a.to_lowercase().partial_cmp(&b.to_lowercase()).unwrap()
+    });
+
+    if let Some(last) = params.last {
+        tags = if let Some(pos) = tags.iter().position(|x| x == &last) {
+            tags.split_off(pos+1)
+        } else {
+            Vec::new()
+        }
+    }
+
+    if let Some(n) = params.n {
+        tags = tags.into_iter().take(n).collect();
+    }
 
     let payload = json!({
         "name": name,
