@@ -4,11 +4,10 @@ use crate::{
     config::Config, error::Error, reference::{Digest, Reference, Tag}, service_url::{ServiceFile, ServiceUrl, TagList}
 };
 use futures::stream::TryStreamExt;
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use oci_spec::{distribution::TagList as OciTagList, image::ImageManifest as OciImageManifest};
-use reqwest::{Client as ReqwestClient, Response};
+use reqwest::{header::{ACCEPT, CONTENT_TYPE}, Client as ReqwestClient, Response};
 use serde::de::DeserializeOwned;
-use url::Url;
 
 pub struct Client {
     url: ServiceUrl,
@@ -44,7 +43,7 @@ impl Client {
 
     pub async fn get_manifest(&self, app_name: &str, reference: Reference) -> Result<OciImageManifest, Error> {
         let response = self
-            .get_response(self.url.get_url_path(app_name, ServiceFile::Manifest(reference))?)
+            .get_response(app_name, ServiceFile::Manifest(reference))
             .await?;
 
         Self::extract_json(response).await
@@ -52,7 +51,7 @@ impl Client {
 
     pub async fn get_blob_stream(&self, app_name: &str, digest: Digest) -> Result<impl tokio::io::AsyncRead, Error> {
         let response = self
-            .get_response(self.url.get_url_path(app_name, ServiceFile::Blob(digest))?)
+            .get_response(app_name, ServiceFile::Blob(digest))
             .await?;
 
         let stream = response.bytes_stream().map_err(std::io::Error::other);
@@ -60,9 +59,8 @@ impl Client {
     }
 
     pub async fn list_tags(&self, app_name: &str) -> Result<OciTagList, Error> {
-        let request_url = self.url.get_url_path(app_name, ServiceFile::TagList(TagList::new()))?;
         let response = self
-            .get_response(request_url)
+            .get_response(app_name, ServiceFile::TagList(TagList::new()))
             .await?;
 
         Self::extract_json(response).await
@@ -71,9 +69,8 @@ impl Client {
     pub async fn list_tags_with_options(&self, app_name: &str, n: Option<usize>, last: Option<Tag>) -> Result<OciTagList, Error> {
         let tag_list = TagList::with_options(n, last);
 
-        let request_url = self.url.get_url_path(app_name, ServiceFile::TagList(tag_list))?;
         let response = self
-            .get_response(request_url)
+            .get_response(app_name, ServiceFile::TagList(tag_list))
             .await?;
 
         Self::extract_json(response).await
@@ -93,24 +90,32 @@ impl Client {
         }
     }
 
-    async fn get_response(&self, url: Url) -> Result<Response, Error> {
+    async fn get_response(&self, app_name: &str, file: ServiceFile) -> Result<Response, Error> {
+        let accepted_types = file.supported_media_types();
+        let url = self.url.get_url_path(app_name, file)?;
+
         info!("Fetching response from {}", url);
+        debug!("Supported media types: {}", accepted_types.join(","));
+
         match self
             .reqwest_client
             .get(url)
+            .header(ACCEPT, accepted_types.join(","))
             .send()
             .await
             .inspect_err(|e| error!("Failed to send request: {}", e))
         {
             Ok(response) => {
                 if response.status().is_success() {
-                    debug!(
-                        "Content type: {:?}",
-                        response
-                            .headers()
-                            .get(reqwest::header::CONTENT_TYPE)
-                            .unwrap()
-                    );
+                    if let Some(content_type) = response.headers().get(CONTENT_TYPE) {
+                        if let Ok(content_type_str) = content_type.to_str() {
+                            debug!("Content type: {}", content_type_str);
+
+                            if !accepted_types.contains(&content_type_str.to_string()) {
+                                warn!("Server returned unsupported content type");
+                            }
+                        }
+                    }
 
                     Ok(response)
                 } else {

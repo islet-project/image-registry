@@ -1,6 +1,7 @@
 use crate::error::Error;
 use crate::reference::{Digest, Reference, Tag};
 
+use oci_spec::image::MediaType;
 use url::Url;
 
 pub(crate) struct TagList {
@@ -66,6 +67,14 @@ impl ServiceFile {
         }
 
         None
+    }
+
+    pub fn supported_media_types(&self) -> Vec<String> {
+        match self {
+            Self::Manifest(_) => vec![MediaType::ImageManifest.to_string()],
+            Self::Blob(_) => vec![MediaType::ImageLayerGzip.to_string(), MediaType::ImageConfig.to_string()],
+            Self::TagList(_) => vec![mime::APPLICATION_JSON.to_string()],
+        }
     }
 }
 
