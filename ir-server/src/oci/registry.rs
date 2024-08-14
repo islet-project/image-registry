@@ -5,7 +5,7 @@ use std::ffi::OsStr;
 use std::path::Path;
 use tokio::fs;
 
-use super::application::Application;
+use super::application::{Application, Content};
 use super::digest::Digest;
 use crate::error::RegistryError;
 use crate::registry::{ImageRegistry, Payload};
@@ -58,6 +58,43 @@ impl Registry
 
         Ok(reg)
     }
+
+    async fn get_payload(content: &Content) -> Option<Payload>
+    {
+        let file = match fs::File::open(&content.path).await {
+            Ok(file) => file,
+            Err(err) => {
+                error!("Error opening \"{}\": {}", content.path.display(), err);
+                return None;
+            }
+        };
+
+        let metadata = match file.metadata().await {
+            Ok(file) => file,
+            Err(err) => {
+                error!(
+                    "Error reading metadata for \"{}\": {}",
+                    content.path.display(),
+                    err
+                );
+                return None;
+            }
+        };
+
+        if metadata.len() != content.size {
+            error!("File size error for \"{}\"", content.path.display());
+            return None;
+        }
+
+        let payload = Payload {
+            file,
+            size: content.size,
+            digest: content.digest.clone(),
+            media_type: content.media_type.clone(),
+        };
+
+        Some(payload)
+    }
 }
 
 #[async_trait]
@@ -81,22 +118,7 @@ impl ImageRegistry for Registry
             Err(_) => app.get_tags().get(reference)?,
         };
 
-        let file = match fs::File::open(&content.path).await {
-            Ok(file) => file,
-            Err(err) => {
-                error!("Error opening \"{}\": {}", content.path.display(), err);
-                return None;
-            }
-        };
-
-        let payload = Payload {
-            stream: tokio_util::io::ReaderStream::new(file),
-            size: content.size,
-            digest: content.digest.clone(),
-            media_type: content.media_type.clone(),
-        };
-
-        Some(payload)
+        Registry::get_payload(content).await
     }
 
     async fn get_blob(&self, app: &str, digest: &str) -> Option<Payload>
@@ -108,21 +130,6 @@ impl ImageRegistry for Registry
             Err(_) => return None,
         };
 
-        let file = match fs::File::open(&content.path).await {
-            Ok(file) => file,
-            Err(err) => {
-                error!("Error opening \"{}\": {}", content.path.display(), err);
-                return None;
-            }
-        };
-
-        let payload = Payload {
-            stream: tokio_util::io::ReaderStream::new(file),
-            size: content.size,
-            digest: content.digest.clone(),
-            media_type: content.media_type.clone(),
-        };
-
-        Some(payload)
+        Registry::get_payload(content).await
     }
 }

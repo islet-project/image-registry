@@ -5,6 +5,7 @@ use serde::Deserialize;
 use serde_json::json;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use tokio_util::io::ReaderStream;
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
 
@@ -122,7 +123,7 @@ async fn get_manifest(
         return NOT_FOUND.into_response();
     };
 
-    let body = body::Body::from_stream(payload.stream);
+    let body = body::Body::from_stream(ReaderStream::new(payload.file));
     let headers = [
         (http::header::CONTENT_TYPE, &payload.media_type),
         (http::header::CONTENT_LENGTH, &format!("{}", payload.size)),
@@ -165,7 +166,7 @@ async fn get_blob(
         return NOT_FOUND.into_response();
     };
 
-    let body = body::Body::from_stream(payload.stream);
+    let body = body::Body::from_stream(ReaderStream::new(payload.file));
     let headers = [
         (http::header::CONTENT_TYPE, &payload.media_type),
         (http::header::CONTENT_LENGTH, &format!("{}", payload.size)),
