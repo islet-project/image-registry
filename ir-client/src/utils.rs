@@ -1,9 +1,10 @@
 use log::debug;
+
 use oci_spec::image::MediaType;
 use reqwest::header::{HeaderMap, HeaderName, CONTENT_LENGTH, CONTENT_TYPE};
 use sha2::{Digest as Sha2Digest, Sha256, Sha512};
 
-use crate::reference::{Digest, SHA_256, SHA_512};
+use crate::{hasher::HashType, reference::Digest};
 
 pub(crate) fn content_type(headers: &HeaderMap) -> Option<String> {
     headers
@@ -34,23 +35,20 @@ pub(crate) fn verify_content_type(content_type: &Option<String>, media_type: &Op
 pub fn verify_digest(digest: &Digest, content: &[u8]) -> bool {
     let digest_value = hex::decode(digest.value()).unwrap_or(Vec::new());
 
-    match digest.algorithm() {
-        SHA_256 => {
+    match digest.hash_type() {
+        HashType::Sha256 => {
             let mut hasher = Sha256::new();
             hasher.update(content);
             let hash = hasher.finalize();
             debug!("Computed sha256: {}", hex::encode(&hash));
             hash.as_slice() == digest_value.as_slice()
         },
-        SHA_512 => {
+        HashType::Sha512 => {
             let mut hasher = Sha512::new();
             hasher.update(content);
             let hash = hasher.finalize();
             debug!("Computed sha512: {}", hex::encode(&hash));
             hash.as_slice() == digest_value.as_slice()
         },
-        _ => {
-            panic!("Programmer error");
-        }
     }
 }

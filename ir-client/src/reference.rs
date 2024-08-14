@@ -1,25 +1,23 @@
-use crate::error::{self, Error};
+use std::fmt::Display;
+
+use crate::{error::{self, Error}, hasher::HashType};
 use log::{error, info};
 use regex::Regex;
-
-#[derive(Debug, Clone)]
-pub struct Digest {
-    algorithm: String,
-    value: String,
-}
 
 pub(crate) const SHA_256: &str = "sha256";
 pub(crate) const SHA_512: &str = "sha512";
 
+#[derive(Debug, Clone)]
+pub struct Digest {
+    hash_type: HashType,
+    value: String,
+}
+
 impl Digest {
     const REGEX: &'static str = r"^([a-z0-9]+[[+._-][a-z0-9]+]*):([a-zA-Z0-9=_-]+)$";
 
-    pub fn to_string(&self) -> String {
-        self.algorithm.clone() + ":" + self.value.as_str()
-    }
-
-    pub fn algorithm(&self) -> &str {
-        &self.algorithm
+    pub fn hash_type(&self) -> &HashType {
+        &self.hash_type
     }
 
     pub fn value(&self) -> &str {
@@ -36,7 +34,7 @@ impl Digest {
         let (_, [algorithm, digest]) = captures.extract();
         match (algorithm, digest.len()) {
             (SHA_256, 64) => Some(
-                Digest { algorithm: algorithm.to_string(), value: digest.to_string() }
+                Digest { hash_type: HashType::Sha256, value: digest.to_string() }
             ),
             (SHA_256, _) => {
                 error!("Wrong length for sha256: {}", digest.len());
@@ -44,7 +42,7 @@ impl Digest {
             },
 
             (SHA_512, 128) => Some(
-                Digest { algorithm: algorithm.to_string(), value: digest.to_string() }
+                Digest { hash_type: HashType::Sha512, value: digest.to_string() }
             ),
             (SHA_512, _) => {
                 error!("Wrong length for sha512: {}", digest.len());
@@ -55,6 +53,12 @@ impl Digest {
                 None
             }
         }
+    }
+}
+
+impl Display for Digest {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}:{}", self.hash_type, self.value)
     }
 }
 

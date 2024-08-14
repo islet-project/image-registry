@@ -19,8 +19,14 @@ regex = "*"
 mime = "0.3"
 sha2 = "*"
 hex = "*"
+pin-project = "*"
 
 oci-spec = "*"
+
+async-compression = { version ="*", features = ["tokio", "gzip", "zstd"] }
+clean-path = "*"
+tokio-stream = "*"
+tokio-tar = "*"
 
 ### DO NOT MODIFY (unless you know what you are doing) ###
 # Reqwest client provides API to pass custom rustls::ClientConfig through "impl Any".
