@@ -2,6 +2,7 @@ use crate::config::Config;
 use crate::error::Error;
 use crate::reference::{Digest, Reference, Tag};
 use crate::service_url::{ServiceFile, ServiceUrl, TagList};
+use crate::utils;
 
 use std::any::type_name;
 use std::io::Read;
@@ -10,7 +11,7 @@ use log::{debug, error, info, warn};
 use oci_spec::distribution::TagList as OciTagList;
 use oci_spec::image::ImageManifest as OciImageManifest;
 use reqwest::blocking::{Client as ReqwestClient, Response};
-use reqwest::header::{ACCEPT, CONTENT_TYPE};
+use reqwest::header::ACCEPT;
 use serde::de::DeserializeOwned;
 
 pub struct Client {
@@ -46,7 +47,14 @@ impl Client {
             .get_response(app_name, ServiceFile::Manifest(reference))
             .inspect_err(|e| error!("Failed to get response: {:?}", e))?;
 
-        Self::extract_json(response)
+        let content_type = utils::content_type(response.headers());
+        let manifest: OciImageManifest = Self::extract_json(response)?;
+
+        if !utils::verify_content_type(&content_type, manifest.media_type()) {
+            warn!("Conent-type doesn't match media-type");
+        }
+
+        Ok(manifest)
     }
 
     pub fn get_blob_reader(&self, app_name: &str, digest: Digest) -> Result<impl Read, Error> {
@@ -104,13 +112,11 @@ impl Client {
         {
             Ok(response) => {
                 if response.status().is_success() {
-                    if let Some(content_type) = response.headers().get(CONTENT_TYPE) {
-                        if let Ok(content_type_str) = content_type.to_str() {
-                            debug!("Content type: {}", content_type_str);
+                    if let Some(content_type_str) = utils::content_type(response.headers()) {
+                        debug!("Content-Type:\"{content_type_str}\"");
 
-                            if !accepted_types.contains(&content_type_str.to_string()) {
-                                warn!("Server returned unsupported content type");
-                            }
+                        if !accepted_types.contains(&content_type_str.to_string()) {
+                            warn!("Server returned unsupported content type");
                         }
                     }
 
