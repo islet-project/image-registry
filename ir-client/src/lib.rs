@@ -6,3 +6,5 @@ pub mod config;
 pub mod async_client;
 pub mod error;
 pub mod reference;
+
+pub use utils::verify_digest;

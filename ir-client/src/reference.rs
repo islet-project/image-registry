@@ -2,14 +2,28 @@ use crate::error::{self, Error};
 use log::{error, info};
 use regex::Regex;
 
-#[derive(Debug)]
-pub struct Digest(String);
+#[derive(Debug, Clone)]
+pub struct Digest {
+    algorithm: String,
+    value: String,
+}
+
+pub(crate) const SHA_256: &str = "sha256";
+pub(crate) const SHA_512: &str = "sha512";
 
 impl Digest {
     const REGEX: &'static str = r"^([a-z0-9]+[[+._-][a-z0-9]+]*):([a-zA-Z0-9=_-]+)$";
 
-    pub fn as_str(&self) -> &str {
-        &self.0
+    pub fn to_string(&self) -> String {
+        self.algorithm.clone() + ":" + self.value.as_str()
+    }
+
+    pub fn algorithm(&self) -> &str {
+        &self.algorithm
+    }
+
+    pub fn value(&self) -> &str {
+        &self.value
     }
 
     fn from_str(value: &str) -> Option<Self> {
@@ -21,14 +35,18 @@ impl Digest {
 
         let (_, [algorithm, digest]) = captures.extract();
         match (algorithm, digest.len()) {
-            ("sha256", 64) => Some(Digest(value.to_string())),
-            ("sha256", _) => {
+            (SHA_256, 64) => Some(
+                Digest { algorithm: algorithm.to_string(), value: digest.to_string() }
+            ),
+            (SHA_256, _) => {
                 error!("Wrong length for sha256: {}", digest.len());
                 None
             },
 
-            ("sha512", 128) => Some(Digest(value.to_string())),
-            ("sha512", _) => {
+            (SHA_512, 128) => Some(
+                Digest { algorithm: algorithm.to_string(), value: digest.to_string() }
+            ),
+            (SHA_512, _) => {
                 error!("Wrong length for sha512: {}", digest.len());
                 None
             },
@@ -47,6 +65,7 @@ impl TryFrom<&str> for Digest {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Tag(String);
 
 impl Tag {
@@ -75,6 +94,7 @@ impl TryFrom<&str> for Tag {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum Reference {
     Digest(Digest),
     Tag(Tag),
@@ -97,10 +117,10 @@ impl TryFrom<&str> for Reference {
 }
 
 impl Reference {
-    pub fn as_str(&self) -> &str {
+    pub fn to_string(&self) -> String {
         match self {
-            Self::Digest(digest) => digest.as_str(),
-            Self::Tag(tag) => tag.as_str(),
+            Self::Digest(digest) => digest.to_string(),
+            Self::Tag(tag) => tag.0.clone(),
         }
     }
 }

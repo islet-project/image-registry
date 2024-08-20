@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::io::Read;
 
-use ir_client::{client::Client, config::Config, reference::{Digest, Reference, Tag}};
+use ir_client::{client::Client, config::Config, reference::{Digest, Reference, Tag}, verify_digest};
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use log::info;
@@ -136,7 +136,11 @@ fn main() {
             let mut blob_buf = Vec::new();
             let blob_size = blob_reader.read_to_end(&mut blob_buf).unwrap();
 
-            info!("blob size = {}", blob_size);
+            info!("blob size = {}, content-length: {:?}", blob_size, blob_reader.len());
+            let digest = blob_reader.digest().as_ref().unwrap();
+            info!("Digest: {}", digest.to_string());
+
+            verify_digest(digest, &blob_buf);
         },
         Commands::ListTags(args) => {
             let last = args.last.clone().map(|user_tag| Tag::try_from(user_tag.as_str()).unwrap());

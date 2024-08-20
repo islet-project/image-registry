@@ -1,13 +1,57 @@
-use std::any::type_name;
-
 use crate::{
     config::Config, error::Error, reference::{Digest, Reference, Tag}, service_url::{ServiceFile, ServiceUrl, TagList}, utils
 };
 use futures::stream::TryStreamExt;
 use log::{debug, error, info, warn};
-use oci_spec::{distribution::TagList as OciTagList, image::ImageManifest as OciImageManifest};
+use oci_spec::{distribution::TagList as OciTagList, image::{ImageManifest as OciImageManifest, MediaType}};
 use reqwest::{header::ACCEPT, Client as ReqwestClient, Response};
 use serde::de::DeserializeOwned;
+use tokio::io::AsyncRead;
+use tokio_util::io::StreamReader;
+
+pub struct BlobStream {
+    response: Option<Response>,
+    length: Option<usize>,
+    digest: Option<Digest>,
+    media_type: Option<MediaType>,
+}
+
+impl BlobStream {
+    pub fn from_response(response: Response) -> Result<Self, Error> {
+        let content_type = utils::content_type(response.headers());
+        let media_type = content_type.map(|ct| MediaType::from(ct.as_str()));
+        let length = utils::content_length(response.headers());
+        let content_digest = utils::docker_content_digest(response.headers());
+        let digest = content_digest.map(
+            |cd| Digest::try_from(cd.as_str())
+                .map_err(|_| Error::ResponseDigestInvalid)
+                .ok()
+        ).flatten();
+
+        Ok(Self { response: Some(response), length, media_type, digest })
+    }
+
+    pub fn len(&self) -> &Option<usize> {
+        &self.length
+    }
+
+    pub fn media_type(&self) -> &Option<MediaType> {
+        &self.media_type
+    }
+
+    pub fn digest(&self) -> &Option<Digest> {
+        &self.digest
+    }
+
+    pub fn take_reader(&mut self) -> Option<impl AsyncRead> {
+        let Some(response) = self.response.take() else {
+            return None;
+        };
+
+        let stream = response.bytes_stream().map_err(std::io::Error::other);
+        Some(StreamReader::new(stream))
+    }
+}
 
 pub struct Client {
     url: ServiceUrl,
@@ -56,13 +100,12 @@ impl Client {
         Ok(manifest)
     }
 
-    pub async fn get_blob_stream(&self, app_name: &str, digest: Digest) -> Result<impl tokio::io::AsyncRead, Error> {
+    pub async fn get_blob_stream(&self, app_name: &str, digest: Digest) -> Result<BlobStream, Error> {
         let response = self
             .get_response(app_name, ServiceFile::Blob(digest))
             .await?;
 
-        let stream = response.bytes_stream().map_err(std::io::Error::other);
-        Ok(tokio_util::io::StreamReader::new(stream))
+        BlobStream::from_response(response)
     }
 
     pub async fn list_tags(&self, app_name: &str) -> Result<OciTagList, Error> {
@@ -84,17 +127,29 @@ impl Client {
     }
 
     async fn extract_json<T: DeserializeOwned>(response: Response) -> Result<T, Error> {
-        match response.json::<T>().await {
-            Ok(value) => Ok(value),
-            Err(err) => {
-                error!("Failed to parse {} as JSON", type_name::<T>());
-                if err.is_decode() {
-                    Err(Error::JSONParsingError(err.to_string()))
-                } else {
-                    Err(Error::UnknownError)
-                }
+        let content_length = utils::content_length(response.headers());
+        let content_digest = utils::docker_content_digest(response.headers());
+
+        let bytes = response.bytes().await.map_err(|_| Error::UnknownError)?;
+
+        if let Some(cl) = content_length {
+            debug!("Content-Length: {cl}");
+            if cl != bytes.len() {
+                error!("Response length doesn't match servers content-length");
+                return Err(Error::ResponseLengthInvalid);
             }
         }
+
+        if let Some(cd) = content_digest {
+            debug!("Docker-content-digest: {cd}");
+            let digest = Digest::try_from(cd.as_str()).map_err(|_| Error::ResponseDigestInvalid)?;
+            if !utils::verify_digest(&digest, &bytes) {
+                error!("Response digest doesn't match servers docker-content-digest");
+                return Err(Error::ResponseDigestInvalid)?;
+            }
+        }
+
+        serde_json::from_slice(&bytes).map_err(|e| Error::JSONParsingError(e.to_string()))
     }
 
     async fn get_response(&self, app_name: &str, file: ServiceFile) -> Result<Response, Error> {

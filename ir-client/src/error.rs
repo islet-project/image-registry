@@ -15,6 +15,8 @@ pub enum Error {
     DigestInvalidError,
     TagInvalidError,
 
+    ResponseLengthInvalid,
+    ResponseDigestInvalid,
     UnknownError,
 }
 
@@ -32,6 +34,8 @@ impl Display for Error {
             Self::TagInvalidError => f.write_str("Invalid tag format")?,
             Self::UnknownError => f.write_str("Unknown error")?,
             Self::UrlParsingError(url_error) => write!(f, "Url parsing error: {}", url_error)?,
+            Self::ResponseLengthInvalid => f.write_str("Response length invalid")?,
+            Self::ResponseDigestInvalid => f.write_str("Response digest invalid")?,
         }
 
         Ok(())

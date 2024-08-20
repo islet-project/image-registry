@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use ir_client::{async_client::Client, config::Config, reference::{Digest, Reference}};
+use ir_client::{async_client::Client, config::Config, reference::{Digest, Reference}, verify_digest};
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use log::info;
@@ -127,8 +127,11 @@ async fn main() {
                 .unwrap();
 
             let mut buf = Vec::new();
-            blob_reader.read_to_end(&mut buf).await.unwrap();
-            info!("Image size = {}", buf.len());
+            blob_reader.take_reader().unwrap().read_to_end(&mut buf).await.unwrap();
+            info!("Image size = {}, content-length: {:?}", buf.len(), blob_reader.len());
+            let digest = blob_reader.digest().as_ref().unwrap();
+            info!("Blob digest: {}", digest.to_string());
+            verify_digest(digest, &buf);
         }
     }
 }

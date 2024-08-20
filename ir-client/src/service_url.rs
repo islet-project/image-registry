@@ -55,8 +55,8 @@ impl ServiceFile {
 
     pub fn get_file_uri(&self) -> String {
         match self {
-            Self::Manifest(reference) => format!("{}{}", Self::MANIFEST_PATH, reference.as_str()),
-            Self::Blob(digest) => format!("{}{}", Self::BLOBS_PATH, digest.as_str()),
+            Self::Manifest(reference) => format!("{}{}", Self::MANIFEST_PATH, reference.to_string()),
+            Self::Blob(digest) => format!("{}{}", Self::BLOBS_PATH, digest.to_string()),
             Self::TagList(tag_list) => format!("{}{}", Self::TAGS_PATH, tag_list.as_str()),
         }
     }
