@@ -122,12 +122,12 @@ async fn main() {
         Commands::GetBlob(args) => {
             let digest = Digest::try_from(args.digest.as_str()).unwrap();
             let mut blob_reader = client
-                .get_blob_stream("com.samsung.example.app", digest)
+                .get_blob_reader("com.samsung.example.app", digest)
                 .await
                 .unwrap();
 
             let mut buf = Vec::new();
-            blob_reader.take_reader().unwrap().read_to_end(&mut buf).await.unwrap();
+            blob_reader.read_to_end(&mut buf).await.unwrap();
             info!("Image size = {}, content-length: {:?}", buf.len(), blob_reader.len());
             let digest = blob_reader.digest().as_ref().unwrap();
             info!("Blob digest: {}", digest.to_string());

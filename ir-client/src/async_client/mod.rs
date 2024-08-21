@@ -1,3 +1,5 @@
+use std::pin::Pin;
+
 use crate::{
     config::Config, error::Error, reference::{Digest, Reference, Tag}, service_url::{ServiceFile, ServiceUrl, TagList}, utils
 };
@@ -9,26 +11,16 @@ use serde::de::DeserializeOwned;
 use tokio::io::AsyncRead;
 use tokio_util::io::StreamReader;
 
-pub struct BlobStream {
-    response: Option<Response>,
+pub struct BlobReader {
+    reader: Pin<Box<dyn AsyncRead + 'static>>,
     length: Option<usize>,
     digest: Option<Digest>,
     media_type: Option<MediaType>,
 }
 
-impl BlobStream {
-    pub fn from_response(response: Response) -> Result<Self, Error> {
-        let content_type = utils::content_type(response.headers());
-        let media_type = content_type.map(|ct| MediaType::from(ct.as_str()));
-        let length = utils::content_length(response.headers());
-        let content_digest = utils::docker_content_digest(response.headers());
-        let digest = content_digest.map(
-            |cd| Digest::try_from(cd.as_str())
-                .map_err(|_| Error::ResponseDigestInvalid)
-                .ok()
-        ).flatten();
-
-        Ok(Self { response: Some(response), length, media_type, digest })
+impl BlobReader {
+    pub fn init(reader: impl AsyncRead + Unpin + 'static , length: Option<usize>, media_type: Option<MediaType>, digest: Option<Digest>) -> Result<Self, Error> {
+        Ok(Self { reader: Box::pin(reader), length, media_type, digest })
     }
 
     pub fn len(&self) -> &Option<usize> {
@@ -42,14 +34,16 @@ impl BlobStream {
     pub fn digest(&self) -> &Option<Digest> {
         &self.digest
     }
+}
 
-    pub fn take_reader(&mut self) -> Option<impl AsyncRead> {
-        let Some(response) = self.response.take() else {
-            return None;
-        };
-
-        let stream = response.bytes_stream().map_err(std::io::Error::other);
-        Some(StreamReader::new(stream))
+impl AsyncRead for BlobReader
+{
+    fn poll_read(
+        mut self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+        buf: &mut tokio::io::ReadBuf<'_>,
+    ) -> std::task::Poll<std::io::Result<()>> {
+        self.reader.as_mut().poll_read(cx, buf)
     }
 }
 
@@ -100,12 +94,21 @@ impl Client {
         Ok(manifest)
     }
 
-    pub async fn get_blob_stream(&self, app_name: &str, digest: Digest) -> Result<BlobStream, Error> {
+    pub async fn get_blob_reader(&self, app_name: &str, digest: Digest) -> Result<BlobReader, Error> {
         let response = self
             .get_response(app_name, ServiceFile::Blob(digest))
             .await?;
 
-        BlobStream::from_response(response)
+        let content_length = utils::content_length(response.headers());
+        let content_type = utils::content_type(response.headers())
+            .map(|ct| MediaType::from(ct.as_str()));
+        let content_digest = utils::docker_content_digest(response.headers());
+        let digest = content_digest.map(|cd| Digest::try_from(cd.as_str()))
+            .transpose()
+            .map_err(|_| Error::ResponseDigestInvalid)?;
+
+        BlobReader::init(StreamReader::new(response.bytes_stream().map_err(std::io::Error::other)),
+                         content_length, content_type, digest)
     }
 
     pub async fn list_tags(&self, app_name: &str) -> Result<OciTagList, Error> {
