@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use ir_client::{async_client::Client, config::Config, reference::{Digest, Reference}, verify_digest};
+use ir_client::{async_client::Client, config::Config, reference::{Digest, Reference, Tag}, verify_digest};
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use log::info;
@@ -49,10 +49,15 @@ struct Cli {
 enum Commands {
     GetManifest(GetManifestArgs),
     GetBlob(GetBlobArgs),
+    ListTags(ListTagsArgs),
 }
 
 #[derive(Args, Debug)]
 struct GetManifestArgs {
+    /// Repository namespace (application name)
+    #[arg(short, long)]
+    app_name: String,
+
     /// Reference of manifest [digest or tag]
     #[arg(short, long)]
     reference: String,
@@ -64,6 +69,10 @@ struct GetManifestArgs {
 
 #[derive(Args, Debug)]
 struct GetBlobArgs {
+    /// Repository namespace (application name)
+    #[arg(short, long)]
+    app_name: String,
+
     // Digest of blob
     #[arg(short, long)]
     digest: String,
@@ -72,6 +81,22 @@ struct GetBlobArgs {
     #[arg(short, long)]
     out: Option<String>,
 }
+
+#[derive(Args, Debug)]
+struct ListTagsArgs {
+    /// Repository namespace (application name)
+    #[arg(short, long)]
+    app_name: String,
+
+    /// List only N tags
+    #[arg(short, long)]
+    n: Option<usize>,
+
+    /// Start listing tags after LAST
+    #[arg(short, long)]
+    last: Option<String>,
+}
+
 
 fn build_config(conn: ConnectionArgs) -> Config {
     match conn.tls {
@@ -114,7 +139,7 @@ async fn main() {
         Commands::GetManifest(args) => {
             let reference = Reference::try_from(args.reference.as_str()).unwrap();
             let manifest = client
-                .get_manifest("com.samsung.example.app", reference)
+                .get_manifest(&args.app_name, reference)
                 .await
                 .unwrap();
             info!("{}", manifest);
@@ -122,7 +147,7 @@ async fn main() {
         Commands::GetBlob(args) => {
             let digest = Digest::try_from(args.digest.as_str()).unwrap();
             let mut blob_reader = client
-                .get_blob_reader("com.samsung.example.app", digest)
+                .get_blob_reader(&args.app_name, digest)
                 .await
                 .unwrap();
 
@@ -132,6 +157,12 @@ async fn main() {
             let digest = blob_reader.digest().as_ref().unwrap();
             info!("Blob digest: {}", digest.to_string());
             verify_digest(digest, &buf);
+        },
+        Commands::ListTags(args) => {
+            let last = args.last.clone().map(|user_tag| Tag::try_from(user_tag.as_str()).unwrap());
+            let tag_list = client.list_tags_with_options(&args.app_name, args.n, last).await.unwrap();
+
+            info!("{}", serde_json::to_string_pretty(&tag_list).unwrap());
         }
     }
 }

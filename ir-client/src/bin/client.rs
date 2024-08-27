@@ -54,6 +54,10 @@ enum Commands {
 
 #[derive(Args, Debug)]
 struct GetManifestArgs {
+    /// Repository namespace (application name)
+    #[arg(short, long)]
+    app_name: String,
+
     /// Reference of manifest [digest or tag]
     #[arg(short, long)]
     reference: String,
@@ -65,6 +69,10 @@ struct GetManifestArgs {
 
 #[derive(Args, Debug)]
 struct GetBlobArgs {
+    /// Repository namespace (application name)
+    #[arg(short, long)]
+    app_name: String,
+
     /// Digest of a blob
     #[arg(short, long)]
     digest: String,
@@ -76,6 +84,10 @@ struct GetBlobArgs {
 
 #[derive(Args, Debug)]
 struct ListTagsArgs {
+    /// Repository namespace (application name)
+    #[arg(short, long)]
+    app_name: String,
+
     /// List only N tags
     #[arg(short, long)]
     n: Option<usize>,
@@ -84,7 +96,6 @@ struct ListTagsArgs {
     #[arg(short, long)]
     last: Option<String>,
 }
-
 
 fn build_config(conn: ConnectionArgs) -> Config {
     match conn.tls {
@@ -125,13 +136,13 @@ fn main() {
     match &cli.command {
         Commands::GetManifest(args) => {
             let reference = Reference::try_from(args.reference.as_str()).unwrap();
-            let manifest = client.get_manifest("com.samsung.example.app", reference).unwrap();
+            let manifest = client.get_manifest(&args.app_name, reference).unwrap();
 
             info!("{}", manifest);
         },
         Commands::GetBlob(args) => {
             let digest = Digest::try_from(args.digest.as_str()).unwrap();
-            let mut blob_reader = client.get_blob_reader("com.samsung.example.app", digest).unwrap();
+            let mut blob_reader = client.get_blob_reader(&args.app_name, digest).unwrap();
 
             let mut blob_buf = Vec::new();
             let blob_size = blob_reader.read_to_end(&mut blob_buf).unwrap();
@@ -144,9 +155,9 @@ fn main() {
         },
         Commands::ListTags(args) => {
             let last = args.last.clone().map(|user_tag| Tag::try_from(user_tag.as_str()).unwrap());
-            let tag_list = client.list_tags_with_options("com.samsung.example.app", args.n, last).unwrap();
+            let tag_list = client.list_tags_with_options(&args.app_name, args.n, last).unwrap();
 
             info!("{}", serde_json::to_string_pretty(&tag_list).unwrap());
-        }
+        },
     }
 }
