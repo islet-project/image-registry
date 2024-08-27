@@ -7,7 +7,7 @@ use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 
 use super::digest::Digest;
-use super::sha2;
+use super::{sha2, hasher};
 use super::tag;
 use super::validate::Validate;
 use crate::error::RegistryError;
@@ -92,7 +92,7 @@ impl Application
         // - verify hashes of linked manifests
         // - load tags from annotations
         if layout_index {
-            if !sha2::verify(&path, &digest)? {
+            if !async_std::task::block_on(hasher::verify(&path, &digest))? {
                 err!("SHA failed for \"{}\"", path.display())?;
             }
 
