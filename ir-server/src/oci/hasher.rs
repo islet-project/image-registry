@@ -4,7 +4,7 @@ use std::future::Future;
 use std::io::Result;
 use std::path::Path;
 use std::task::{ready, Poll};
-use tokio::io::{AsyncRead, ReadBuf};
+use tokio::io::{AsyncRead, AsyncReadExt, ReadBuf};
 use tokio::pin;
 
 use super::digest::Digest as OciDigest;
@@ -73,17 +73,24 @@ impl<T: AsyncRead> Future for Hasher<T>
 
 pub async fn verify<P: AsRef<Path>>(path: P, digest: &OciDigest) -> RegistryResult<bool>
 {
-    let file = tokio::fs::File::open(path).await?;
-    let hasher = Hasher::new(digest, file)?;
+    let mut file = tokio::fs::File::open(path).await?;
 
-    pin!(hasher);
-
-    let hash = loop {
-        if let Some(hash) = hasher.as_mut().await? {
-            println!("{:x?}", hash);
-            break hash;
-        }
+    let mut hasher = match digest.get_algo() {
+        "sha256" => Box::new(Sha256::new()) as Box<dyn DynDigest>,
+        "sha512" => Box::new(Sha512::new()) as Box<dyn DynDigest>,
+        a => err!("Wrong hash algorithm: {}", a)?,
     };
+
+    let mut buf = [0 as u8; 8192];
+    loop {
+        let n = file.read(&mut buf).await?;
+        if n == 0 {
+            break;
+        }
+        hasher.update(&buf[..n]);
+    }
+
+    let hash = hasher.finalize().to_vec();
 
     // unwrap() below is intentional, new() for digest will make sure the hash
     // is correct, verifying digest created with new_unchecked() is an error
