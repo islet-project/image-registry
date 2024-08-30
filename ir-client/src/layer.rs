@@ -12,7 +12,7 @@ use tokio_tar::{Archive, ArchiveBuilder};
 
 use crate::{error::Error, hasher::Hasher, reference::Digest};
 
-const WHITEOUT_FILE: &'static str = ".wh.";
+const WHITEOUT_FILE: &str = ".wh.";
 const WHITEOUT_OPAQUE: &str = ".wh..wh..opq";
 
 enum Whiteout {
@@ -22,11 +22,11 @@ enum Whiteout {
 
 impl Whiteout {
     pub const fn opaque() -> &'static str {
-        &WHITEOUT_OPAQUE
+        WHITEOUT_OPAQUE
     }
 
     pub const fn file() -> &'static str {
-        &WHITEOUT_FILE
+        WHITEOUT_FILE
     }
 }
 
@@ -177,12 +177,12 @@ impl Image {
         debug!("Validating diff_id: {}", diff_id.value());
 
 
-        let encoded_diff_id = hex::encode(&hasher.finalize().into_vec());
+        let encoded_diff_id = hex::encode(hasher.finalize());
         if diff_id.value() !=  encoded_diff_id {
             error!("Diff id does not match! Expected: \"{}\", Got: \"{}\"", diff_id.value(), encoded_diff_id);
             return Err(Error::LayerInvalidDiffIdError);
         }
-        return Ok(());
+        Ok(())
     }
 
     pub async fn unpack_layer<P: AsRef<Path>>(

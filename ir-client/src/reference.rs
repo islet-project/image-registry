@@ -98,6 +98,12 @@ impl TryFrom<&str> for Tag {
     }
 }
 
+impl Display for Tag {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum Reference {
     Digest(Digest),
@@ -120,11 +126,11 @@ impl TryFrom<&str> for Reference {
     }
 }
 
-impl Reference {
-    pub fn to_string(&self) -> String {
+impl Display for Reference {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Digest(digest) => digest.to_string(),
-            Self::Tag(tag) => tag.0.clone(),
+            Self::Digest(digest) => write!(f, "{}", digest),
+            Self::Tag(tag) => write!(f, "{}", tag),
         }
     }
 }

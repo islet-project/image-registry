@@ -27,11 +27,11 @@ impl BlobReader {
         let media_type = content_type.map(|ct| MediaType::from(ct.as_str()));
         let length = utils::content_length(response.headers());
         let content_digest = utils::docker_content_digest(response.headers());
-        let digest = content_digest.map(
+        let digest = content_digest.and_then(
             |cd| Digest::try_from(cd.as_str())
                 .map_err(|_| Error::ResponseDigestInvalid)
                 .ok()
-        ).flatten();
+        );
         Ok(Self { response, length, media_type, digest })
     }
 
