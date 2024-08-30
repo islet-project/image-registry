@@ -3,7 +3,7 @@ use std::fmt::Display;
 use pin_project::pin_project;
 use sha2::{digest::DynDigest, Digest, Sha256, Sha512};
 use tokio::io::AsyncRead;
-use crate::reference::{SHA_256, SHA_512};
+use crate::oci::reference::{SHA_256, SHA_512};
 
 #[derive(Clone, Debug)]
 pub enum HashType {

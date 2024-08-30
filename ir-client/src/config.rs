@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use rustls::{client::ResolvesClientCert, ClientConfig, RootCertStore};
 
-use crate::service_url::{Scheme, HTTPS_SCHEME, HTTP_SCHEME};
+use crate::oci::service_url::{Scheme, HTTPS_SCHEME, HTTP_SCHEME};
 
 pub(crate) enum ConnectionMode {
     None,

@@ -10,7 +10,7 @@ use tokio::{
 use tokio_stream::*;
 use tokio_tar::{Archive, ArchiveBuilder};
 
-use crate::{error::Error, hasher::Hasher, reference::Digest};
+use crate::{error::Error, hasher::Hasher, oci::reference::Digest};
 
 const WHITEOUT_FILE: &str = ".wh.";
 const WHITEOUT_OPAQUE: &str = ".wh..wh..opq";

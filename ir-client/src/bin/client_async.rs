@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use ir_client::{async_client::Client, config::Config, reference::{Digest, Reference, Tag}, verify_digest};
+use ir_client::oci::{client::Client, reference::{Digest, Reference, Tag}};
+use ir_client::{config::Config, verify_digest};
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use log::info;

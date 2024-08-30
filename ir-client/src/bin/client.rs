@@ -1,7 +1,8 @@
 use std::sync::Arc;
 use std::io::Read;
 
-use ir_client::{client::Client, config::Config, reference::{Digest, Reference, Tag}, verify_digest};
+use ir_client::oci::{blocking::client::Client, reference::{Digest, Reference, Tag}};
+use ir_client::{config::Config, verify_digest};
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use log::info;

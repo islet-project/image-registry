@@ -1,5 +1,5 @@
 use clap::Parser;
-use ir_client::{layer::Image, reference::Digest};
+use ir_client::{layer::Image, oci::reference::Digest};
 use oci_spec::image::MediaType;
 use serde::Serialize;
 

@@ -4,7 +4,7 @@ use oci_spec::image::MediaType;
 use reqwest::header::{HeaderMap, HeaderName, CONTENT_LENGTH, CONTENT_TYPE};
 use sha2::{Digest as Sha2Digest, Sha256, Sha512};
 
-use crate::{hasher::HashType, reference::Digest};
+use crate::{hasher::HashType, oci::reference::Digest};
 
 pub(crate) fn content_type(headers: &HeaderMap) -> Option<String> {
     headers
