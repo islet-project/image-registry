@@ -2,6 +2,7 @@ mod utils;
 pub mod hasher;
 
 pub mod oci;
+pub mod client;
 pub mod config;
 pub mod error;
 pub mod layer;

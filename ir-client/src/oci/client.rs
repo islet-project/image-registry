@@ -152,7 +152,7 @@ impl Client {
             }
         }
 
-        serde_json::from_slice(&bytes).map_err(|e| Error::JSONParsingError(e.to_string()))
+        Ok(serde_json::from_slice(&bytes)?)
     }
 
     async fn get_response(&self, app_name: &str, file: ServiceFile) -> Result<Response, Error> {

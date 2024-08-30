@@ -61,6 +61,11 @@ impl From<IOError> for Error {
     }
 }
 
+impl From<serde_json::Error> for Error {
+    fn from(value: serde_json::Error) -> Self {
+        Error::JSONParsingError(value.to_string())
+    }
+}
 
 impl Error {
     pub fn into_config(reqwest_error: reqwest::Error) -> Self {

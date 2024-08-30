@@ -52,8 +52,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     let image = Image::init(args.dest);
     image.unpack_layer(
-        args.layer,
-        args.media_type.into_media_type(),
+        &args.layer,
+        &args.media_type.into_media_type(),
         Digest::try_from(args.diff_id.as_str()).unwrap(),
     ).await.unwrap();
     return Ok(());

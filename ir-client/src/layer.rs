@@ -109,7 +109,6 @@ impl Image {
                 Error::LayerInvalidError
             })?;
 
-            info!("{:?}", entry.header().entry_type());
             if !entry.header().entry_type().is_file() {
                 // Only a regular file can be a whiteout
                 continue
@@ -165,7 +164,7 @@ impl Image {
 
             let orig_path = self.root.join(&entry_path).clean();
 
-            info!("Unpacking entry: {} onto: {}", entry_path.display(), orig_path.display());
+            debug!("Unpacking entry: {} onto: {}", entry_path.display(), orig_path.display());
 
             entry.unpack_in(&self.root).await?;
         }
@@ -187,13 +186,13 @@ impl Image {
 
     pub async fn unpack_layer<P: AsRef<Path>>(
         &self,
-        layer: P,
-        media_type: MediaType,
+        layer: &P,
+        media_type: &MediaType,
         diff_id: Digest,
     ) -> Result<(), Error> {
-        info!("Unpacking layer: {} onto directory: {}", layer.as_ref().display(), self.root.display());
+        debug!("Unpacking layer: {} onto directory: {}", layer.as_ref().display(), self.root.display());
 
-        let hash_reader = Hasher::new(diff_id. hash_type(), get_layer_reader(File::open(&layer).await?, &media_type));
+        let hash_reader = Hasher::new(diff_id. hash_type(), get_layer_reader(File::open(layer).await?, &media_type));
 
         let mut archive = Archive::new(hash_reader);
 
@@ -209,7 +208,7 @@ impl Image {
 
         Self::validate_diff_id(archive.into_inner().map_err(|_| Error::UnknownError)?, diff_id).await?;
 
-        self.process_copy(get_layer_reader(File::open(&layer).await?, &media_type)).await?;
+        self.process_copy(get_layer_reader(File::open(&layer).await?, media_type)).await?;
 
         Ok(())
     }
