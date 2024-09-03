@@ -214,10 +214,10 @@ impl Image {
     }
 }
 
-pub fn get_layer_reader<A: AsyncRead + Unpin + 'static>(
+pub fn get_layer_reader<A: AsyncRead + Send + Sync + Unpin + 'static>(
     f: A,
     media_type: &MediaType,
-) -> Box<dyn AsyncRead + Unpin> {
+) -> Box<dyn AsyncRead + Send + Sync + Unpin> {
     match media_type {
         MediaType::ImageLayer => Box::new(BufReader::new(f)),
         MediaType::ImageLayerGzip => Box::new(GzipDecoder::new(BufReader::new(f))),

@@ -94,7 +94,8 @@ async fn main() {
 
     let image_info = client.get_image_info(&cli.app_name, reference).await.unwrap();
 
-    let tmp = Path::new(cli.dest.as_str()).parent().unwrap();
+    let tmp = Path::new(cli.dest.as_str()).parent().unwrap().to_path_buf();
+    let handle = tokio::spawn(async move { client.unpack_image(image_info, &cli.dest, tmp).await});
 
-    client.unpack_image(image_info, &cli.dest, tmp).await.unwrap();
+    let _ = handle.await.unwrap();
 }

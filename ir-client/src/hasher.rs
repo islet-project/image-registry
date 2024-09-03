@@ -46,7 +46,7 @@ impl<T: AsyncRead + Unpin> Hasher<T> {
     }
 }
 
-impl<T: AsyncRead + Unpin> AsyncRead for Hasher<T> {
+impl<T: AsyncRead + Send + Sync + Unpin> AsyncRead for Hasher<T> {
     fn poll_read(
             self: std::pin::Pin<&mut Self>,
             cx: &mut std::task::Context<'_>,

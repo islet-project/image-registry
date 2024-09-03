@@ -12,14 +12,14 @@ use tokio::io::AsyncRead;
 use tokio_util::io::StreamReader;
 
 pub struct BlobReader {
-    reader: Pin<Box<dyn AsyncRead + 'static>>,
+    reader: Pin<Box<dyn AsyncRead + Send + Sync + 'static>>,
     length: Option<usize>,
     digest: Option<Digest>,
     media_type: Option<MediaType>,
 }
 
 impl BlobReader {
-    pub fn init(reader: impl AsyncRead + Unpin + 'static , length: Option<usize>, media_type: Option<MediaType>, digest: Option<Digest>) -> Result<Self, Error> {
+    pub fn init(reader: impl AsyncRead + Send + Sync + Unpin + 'static , length: Option<usize>, media_type: Option<MediaType>, digest: Option<Digest>) -> Result<Self, Error> {
         Ok(Self { reader: Box::pin(reader), length, media_type, digest })
     }
 
