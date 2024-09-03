@@ -113,9 +113,11 @@ fn make_url(user: &str, scheme: &Scheme) -> Result<Url, Error> {
         // Otherwise scheme will be empty
         if user_parsed.has_host() {
             let user_scheme = user_parsed.scheme().to_owned();
-            (scheme == &user_parsed.scheme())
-                .then_some(user_parsed)
-                .ok_or(Error::UrlParsingError(format!("Invalid user scheme: {}", user_scheme)))?;
+            return Ok(
+                (scheme == &user_parsed.scheme())
+                    .then_some(user_parsed)
+                    .ok_or(Error::UrlParsingError(format!("Invalid user scheme: {}", user_scheme)))?
+            );
         }
     }
 
