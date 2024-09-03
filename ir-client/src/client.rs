@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use log::{debug, error, info};
+use log::{error, info};
 use oci_spec::image::{ImageConfiguration as OciConfig, Descriptor, MediaType};
 use tokio::fs::{remove_file, File};
 use tokio::io::{copy, AsyncReadExt, AsyncWriteExt};
@@ -59,7 +59,6 @@ impl Client {
         }
 
         let config: OciConfig = serde_json::from_slice(&config_bytes)?;
-        debug!("{:?}", config);
 
         Ok(ImageInfo {
             app_name: app_name.to_string(),

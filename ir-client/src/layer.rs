@@ -1,6 +1,6 @@
 use async_compression::tokio::bufread::{GzipDecoder, ZstdDecoder};
 use clean_path::Clean;
-use log::{debug, error, info, warn};
+use log::{debug, error, warn};
 pub use oci_spec::image::MediaType;
 use std::path::{Path, PathBuf};
 use tokio::{
@@ -46,7 +46,7 @@ impl Image {
             return Err(Error::LayerInvalidError);
         }
 
-        info!("Removing file {}", orig_file_name.display());
+        debug!("Removing file {}", orig_file_name.display());
         remove_file(orig_file_name).await?;
 
         Ok(())
@@ -61,7 +61,7 @@ impl Image {
 
         let mut read_dir = read_dir(&orig_dir).await?;
 
-        info!("Removing contents of directory: {}", orig_dir.display());
+        debug!("Removing contents of directory: {}", orig_dir.display());
 
         while let Some(dir_entry) = read_dir.next_entry().await? {
             if dir_entry.file_type().await?.is_dir() {
@@ -75,8 +75,6 @@ impl Image {
     }
 
     fn matches_whiteout(entry: &Path) -> Result<Option<Whiteout>, Error> {
-        debug!("Checking if whiteout entry: {}", entry.display());
-
         let Some(file_name) = entry.file_name() else {
             // This shouldn't really happen
             warn!("No file name for regular file");
@@ -99,9 +97,8 @@ impl Image {
         Ok(None)
     }
 
-    // async fn process_whiteouts(&self, archive: impl AsyncRead + Unpin) -> Result<(), Error> {
-    //     let mut entries = Archive::new(archive).entries()?;
     async fn process_whiteout<R: AsyncRead + Unpin>(&self, archive: &mut Archive<R>) ->Result<(), Error> {
+        debug!("Processing whiteouts");
         let mut entries = archive.entries()?;
         while let Some(entry) = entries.next().await {
             let entry = entry.map_err(|e| {
@@ -124,6 +121,7 @@ impl Image {
                 continue
             };
 
+            debug!("Entry: \"{}\" is a whiteout file", entry_path.display());
             match whiteout {
                 Whiteout::WhiteoutOpaque => {
                     self.remove_dir_content(entry_path.parent().unwrap_or(Path::new(""))).await?;
@@ -175,7 +173,6 @@ impl Image {
     async fn validate_diff_id<R: AsyncRead + Unpin>(mut hasher: Hasher<R>, diff_id: Digest) -> Result<(), Error> {
         debug!("Validating diff_id: {}", diff_id.value());
 
-
         let encoded_diff_id = hex::encode(hasher.finalize());
         if diff_id.value() !=  encoded_diff_id {
             error!("Diff id does not match! Expected: \"{}\", Got: \"{}\"", diff_id.value(), encoded_diff_id);
@@ -192,7 +189,7 @@ impl Image {
     ) -> Result<(), Error> {
         debug!("Unpacking layer: {} onto directory: {}", layer.as_ref().display(), self.root.display());
 
-        let hash_reader = Hasher::new(diff_id. hash_type(), get_layer_reader(File::open(layer).await?, &media_type));
+        let hash_reader = Hasher::new(diff_id. hash_type(), get_layer_reader(File::open(layer).await?, &media_type)?);
 
         let mut archive = Archive::new(hash_reader);
 
@@ -208,7 +205,7 @@ impl Image {
 
         Self::validate_diff_id(archive.into_inner().map_err(|_| Error::UnknownError)?, diff_id).await?;
 
-        self.process_copy(get_layer_reader(File::open(&layer).await?, media_type)).await?;
+        self.process_copy(get_layer_reader(File::open(&layer).await?, media_type)?).await?;
 
         Ok(())
     }
@@ -217,11 +214,14 @@ impl Image {
 pub fn get_layer_reader<A: AsyncRead + Send + Sync + Unpin + 'static>(
     f: A,
     media_type: &MediaType,
-) -> Box<dyn AsyncRead + Send + Sync + Unpin> {
+) -> Result<Box<dyn AsyncRead + Send + Sync + Unpin>, Error> {
     match media_type {
-        MediaType::ImageLayer => Box::new(BufReader::new(f)),
-        MediaType::ImageLayerGzip => Box::new(GzipDecoder::new(BufReader::new(f))),
-        MediaType::ImageLayerZstd => Box::new(ZstdDecoder::new(BufReader::new(f))),
-        _ => panic!("Unexpected media type of a layer: {media_type}"),
+        MediaType::ImageLayer => Ok(Box::new(BufReader::new(f))),
+        MediaType::ImageLayerGzip => Ok(Box::new(GzipDecoder::new(BufReader::new(f)))),
+        MediaType::ImageLayerZstd => Ok(Box::new(ZstdDecoder::new(BufReader::new(f)))),
+        _ => {
+            error!("Unsupported layer media type: {}", media_type);
+            Err(Error::LayerInvalidError)
+        },
     }
 }

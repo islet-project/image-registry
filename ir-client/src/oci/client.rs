@@ -136,7 +136,6 @@ impl Client {
         let bytes = response.bytes().await.map_err(|_| Error::UnknownError)?;
 
         if let Some(cl) = content_length {
-            debug!("Content-Length: {cl}");
             if cl != bytes.len() {
                 error!("Response length doesn't match servers content-length");
                 return Err(Error::ResponseLengthInvalid);
@@ -144,7 +143,6 @@ impl Client {
         }
 
         if let Some(cd) = content_digest {
-            debug!("Docker-content-digest: {cd}");
             let digest = Digest::try_from(cd.as_str()).map_err(|_| Error::ResponseDigestInvalid)?;
             if !utils::verify_digest(&digest, &bytes) {
                 error!("Response digest doesn't match servers docker-content-digest");
@@ -173,8 +171,6 @@ impl Client {
             Ok(response) => {
                 if response.status().is_success() {
                     if let Some(content_type_str) = utils::content_type(response.headers()) {
-                        debug!("Content-Type:\"{content_type_str}\"");
-
                         if !accepted_types.contains(&content_type_str.to_string()) {
                             warn!("Server returned unsupported content type");
                         }

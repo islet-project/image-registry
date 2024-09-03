@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use crate::{error::{self, Error}, hasher::HashType};
-use log::{error, info};
+use log::{debug, error, info};
 use regex::Regex;
 
 pub(crate) const SHA_256: &str = "sha256";
@@ -27,7 +27,6 @@ impl Digest {
     fn from_str(value: &str) -> Option<Self> {
         let digest_re = Regex::new(Self::REGEX).expect("Digest regex is malformed");
         let Some(captures) = digest_re.captures(value) else {
-            info!("Reference not a digest");
             return None;
         };
 
@@ -108,10 +107,12 @@ impl TryFrom<&str> for Reference {
     type Error = error::Error;
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         if let Ok(digest) = Digest::try_from(value) {
+            debug!("Reference \"{value}\" is a digest");
             return Ok(Self::Digest(digest));
         }
 
         if let Ok(tag) = Tag::try_from(value) {
+            debug!("Reference\"{value}\" is a tag");
             return Ok(Self::Tag(tag));
         }
 

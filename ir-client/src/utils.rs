@@ -9,19 +9,28 @@ use crate::{hasher::HashType, oci::reference::Digest};
 pub(crate) fn content_type(headers: &HeaderMap) -> Option<String> {
     headers
         .get(CONTENT_TYPE)
-        .and_then(|ct| ct.to_str().ok().map(|ct| ct.to_string()))
+        .and_then(|ct| ct.to_str().ok().map(|ct| {
+            debug!("Content-type: {ct}");
+            ct.to_string()
+        }))
 }
 
 pub(crate) fn content_length(headers: &HeaderMap) -> Option<usize> {
     headers
         .get(CONTENT_LENGTH)
-        .and_then(|cl| cl.to_str().ok().map(|cl| cl.parse().ok()))?
+        .and_then(|cl| cl.to_str().ok().map(|cl| {
+            debug!("Content-length: {cl}");
+            cl.parse().ok()
+        }))?
 }
 
 pub(crate) fn docker_content_digest(headers: &HeaderMap) -> Option<String> {
     headers
         .get(HeaderName::from_static("docker-content-digest"))
-        .and_then(|ct| ct.to_str().ok().map(|ct| ct.to_string()))
+        .and_then(|cd| cd.to_str().ok().map(|cd| {
+            debug!("docker-content-digest: {cd}");
+            cd.to_string()
+        }))
 }
 
 pub(crate) fn verify_content_type(content_type: &Option<String>, media_type: &Option<MediaType>) -> bool {
