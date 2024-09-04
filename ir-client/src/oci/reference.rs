@@ -26,9 +26,7 @@ impl Digest {
 
     fn from_str(value: &str) -> Option<Self> {
         let digest_re = Regex::new(Self::REGEX).expect("Digest regex is malformed");
-        let Some(captures) = digest_re.captures(value) else {
-            return None;
-        };
+        let captures = digest_re.captures(value)?;
 
         let (_, [algorithm, digest]) = captures.extract();
         match (algorithm, digest.len()) {
@@ -121,11 +119,11 @@ impl TryFrom<&str> for Reference {
     }
 }
 
-impl Reference {
-    pub fn to_string(&self) -> String {
+impl Display for Reference {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Digest(digest) => digest.to_string(),
-            Self::Tag(tag) => tag.0.clone(),
+            Self::Digest(digest) => f.write_str(&digest.to_string()),
+            Self::Tag(tag) => f.write_str(&tag.0),
         }
     }
 }

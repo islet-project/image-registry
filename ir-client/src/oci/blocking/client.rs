@@ -18,7 +18,7 @@ pub struct BlobReader {
     response: Response,
     length: Option<usize>,
     media_type: Option<MediaType>,
-    digest: Option<Digest>
+    digest: Option<Digest>,
 }
 
 impl BlobReader {
@@ -27,12 +27,17 @@ impl BlobReader {
         let media_type = content_type.map(|ct| MediaType::from(ct.as_str()));
         let length = utils::content_length(response.headers());
         let content_digest = utils::docker_content_digest(response.headers());
-        let digest = content_digest.and_then(
-            |cd| Digest::try_from(cd.as_str())
+        let digest = content_digest.and_then(|cd| {
+            Digest::try_from(cd.as_str())
                 .map_err(|_| Error::ResponseDigestInvalid)
                 .ok()
-        );
-        Ok(Self { response, length, media_type, digest })
+        });
+        Ok(Self {
+            response,
+            length,
+            media_type,
+            digest,
+        })
     }
 
     pub fn len(&self) -> &Option<usize> {
@@ -63,7 +68,7 @@ pub struct Client {
 impl Client {
     /// Create new image registry client from given configuration
     pub fn from_config(config: Config) -> Result<Self, Error> {
-        let Config {host, mode} = config;
+        let Config { host, mode } = config;
         let url = ServiceUrl::init(mode.scheme(), host);
         match mode.into_rustls_config() {
             None => Ok(Self {
@@ -72,8 +77,8 @@ impl Client {
             }),
             Some(client_config) => {
                 let reqwest_client = ReqwestClient::builder()
-                        .use_preconfigured_tls(client_config)
-                        .build()
+                    .use_preconfigured_tls(client_config)
+                    .build()
                     .map_err(Error::into_config)?;
                 Ok(Self {
                     url,
@@ -83,7 +88,11 @@ impl Client {
         }
     }
 
-    pub fn get_manifest(&self, app_name: &str, reference: Reference) -> Result<OciImageManifest, Error> {
+    pub fn get_manifest(
+        &self,
+        app_name: &str,
+        reference: Reference,
+    ) -> Result<OciImageManifest, Error> {
         let response = self
             .get_response(app_name, ServiceFile::Manifest(reference))
             .inspect_err(|e| error!("Failed to get response: {:?}", e))?;
@@ -114,7 +123,12 @@ impl Client {
         Self::extract_json(response)
     }
 
-    pub fn list_tags_with_options(&self, app_name: &str, n: Option<usize>, last: Option<Tag>) -> Result<OciTagList, Error> {
+    pub fn list_tags_with_options(
+        &self,
+        app_name: &str,
+        n: Option<usize>,
+        last: Option<Tag>,
+    ) -> Result<OciTagList, Error> {
         let tag_list = TagList::with_options(n, last);
 
         let response = self

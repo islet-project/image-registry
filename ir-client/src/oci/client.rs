@@ -1,11 +1,20 @@
 use std::pin::Pin;
 
 use crate::{
-    config::Config, error::Error, oci::{reference::{Digest, Reference, Tag}, service_url::{ServiceFile, ServiceUrl, TagList}}, utils
+    config::Config,
+    error::Error,
+    oci::{
+        reference::{Digest, Reference, Tag},
+        service_url::{ServiceFile, ServiceUrl, TagList},
+    },
+    utils,
 };
 use futures::stream::TryStreamExt;
 use log::{debug, error, info, warn};
-use oci_spec::{distribution::TagList as OciTagList, image::{ImageManifest as OciImageManifest, MediaType}};
+use oci_spec::{
+    distribution::TagList as OciTagList,
+    image::{ImageManifest as OciImageManifest, MediaType},
+};
 use reqwest::{header::ACCEPT, Client as ReqwestClient, Response};
 use serde::de::DeserializeOwned;
 use tokio::io::AsyncRead;
@@ -19,8 +28,18 @@ pub struct BlobReader {
 }
 
 impl BlobReader {
-    pub fn init(reader: impl AsyncRead + Send + Sync + Unpin + 'static , length: Option<usize>, media_type: Option<MediaType>, digest: Option<Digest>) -> Result<Self, Error> {
-        Ok(Self { reader: Box::pin(reader), length, media_type, digest })
+    pub fn init(
+        reader: impl AsyncRead + Send + Sync + Unpin + 'static,
+        length: Option<usize>,
+        media_type: Option<MediaType>,
+        digest: Option<Digest>,
+    ) -> Result<Self, Error> {
+        Ok(Self {
+            reader: Box::pin(reader),
+            length,
+            media_type,
+            digest,
+        })
     }
 
     pub fn len(&self) -> &Option<usize> {
@@ -36,8 +55,7 @@ impl BlobReader {
     }
 }
 
-impl AsyncRead for BlobReader
-{
+impl AsyncRead for BlobReader {
     fn poll_read(
         mut self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context<'_>,
@@ -55,31 +73,31 @@ pub struct Client {
 impl Client {
     /// Create new image registry async client from given configuration
     pub fn from_config(config: Config) -> Result<Self, Error> {
-        let Config {host, mode} = config;
+        let Config { host, mode } = config;
         let url = ServiceUrl::init(mode.scheme(), host);
         match mode.into_rustls_config() {
-            None => Ok (
-                Self {
-                    url,
-                    reqwest_client: ReqwestClient::new(),
-                }
-            ),
+            None => Ok(Self {
+                url,
+                reqwest_client: ReqwestClient::new(),
+            }),
             Some(client_config) => {
                 let reqwest_client = ReqwestClient::builder()
                     .use_preconfigured_tls(client_config)
                     .build()
                     .map_err(Error::into_config)?;
-                Ok (
-                    Self {
-                        url,
-                        reqwest_client
-                    }
-                )
+                Ok(Self {
+                    url,
+                    reqwest_client,
+                })
             }
         }
     }
 
-    pub async fn get_manifest(&self, app_name: &str, reference: Reference) -> Result<OciImageManifest, Error> {
+    pub async fn get_manifest(
+        &self,
+        app_name: &str,
+        reference: Reference,
+    ) -> Result<OciImageManifest, Error> {
         let response = self
             .get_response(app_name, ServiceFile::Manifest(reference))
             .await?;
@@ -94,21 +112,30 @@ impl Client {
         Ok(manifest)
     }
 
-    pub async fn get_blob_reader(&self, app_name: &str, digest: Digest) -> Result<BlobReader, Error> {
+    pub async fn get_blob_reader(
+        &self,
+        app_name: &str,
+        digest: Digest,
+    ) -> Result<BlobReader, Error> {
         let response = self
             .get_response(app_name, ServiceFile::Blob(digest))
             .await?;
 
         let content_length = utils::content_length(response.headers());
-        let content_type = utils::content_type(response.headers())
-            .map(|ct| MediaType::from(ct.as_str()));
+        let content_type =
+            utils::content_type(response.headers()).map(|ct| MediaType::from(ct.as_str()));
         let content_digest = utils::docker_content_digest(response.headers());
-        let digest = content_digest.map(|cd| Digest::try_from(cd.as_str()))
+        let digest = content_digest
+            .map(|cd| Digest::try_from(cd.as_str()))
             .transpose()
             .map_err(|_| Error::ResponseDigestInvalid)?;
 
-        BlobReader::init(StreamReader::new(response.bytes_stream().map_err(std::io::Error::other)),
-                         content_length, content_type, digest)
+        BlobReader::init(
+            StreamReader::new(response.bytes_stream().map_err(std::io::Error::other)),
+            content_length,
+            content_type,
+            digest,
+        )
     }
 
     pub async fn list_tags(&self, app_name: &str) -> Result<OciTagList, Error> {
@@ -119,7 +146,12 @@ impl Client {
         Self::extract_json(response).await
     }
 
-    pub async fn list_tags_with_options(&self, app_name: &str, n: Option<usize>, last: Option<Tag>) -> Result<OciTagList, Error> {
+    pub async fn list_tags_with_options(
+        &self,
+        app_name: &str,
+        n: Option<usize>,
+        last: Option<Tag>,
+    ) -> Result<OciTagList, Error> {
         let tag_list = TagList::with_options(n, last);
 
         let response = self

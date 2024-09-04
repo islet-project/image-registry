@@ -55,8 +55,8 @@ impl ServiceFile {
 
     pub fn get_file_uri(&self) -> String {
         match self {
-            Self::Manifest(reference) => format!("{}{}", Self::MANIFEST_PATH, reference.to_string()),
-            Self::Blob(digest) => format!("{}{}", Self::BLOBS_PATH, digest.to_string()),
+            Self::Manifest(reference) => format!("{}{}", Self::MANIFEST_PATH, reference),
+            Self::Blob(digest) => format!("{}{}", Self::BLOBS_PATH, digest),
             Self::TagList(tag_list) => format!("{}{}", Self::TAGS_PATH, tag_list.as_str()),
         }
     }
@@ -113,11 +113,9 @@ fn make_url(user: &str, scheme: &Scheme) -> Result<Url, Error> {
         // Otherwise scheme will be empty
         if user_parsed.has_host() {
             let user_scheme = user_parsed.scheme().to_owned();
-            return Ok(
-                (scheme == &user_parsed.scheme())
-                    .then_some(user_parsed)
-                    .ok_or(Error::UrlParsingError(format!("Invalid user scheme: {}", user_scheme)))?
-            );
+            return (scheme == &user_parsed.scheme())
+                .then_some(user_parsed)
+                .ok_or(Error::UrlParsingError(format!("Invalid user scheme: {}", user_scheme)));
         }
     }
 

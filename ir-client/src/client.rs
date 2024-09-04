@@ -1,15 +1,15 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use log::{error, info};
-use oci_spec::image::{ImageConfiguration as OciConfig, Descriptor, MediaType};
+use log::{error, info, warn};
+use oci_spec::image::{Descriptor, ImageConfiguration as OciConfig, MediaType};
 use tokio::fs::{remove_file, File};
 use tokio::io::{copy, AsyncReadExt, AsyncWriteExt};
 
+use crate::config::Config;
 use crate::error::Error;
 use crate::layer::Image;
 use crate::oci::client::Client as OciClient;
-use crate::config::Config;
 use crate::oci::reference::{Digest, Reference};
 use crate::verify_digest;
 
@@ -39,20 +39,28 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn from_config(config: Config) -> Result <Self, Error> {
+    pub fn from_config(config: Config) -> Result<Self, Error> {
         Ok(Self {
-            oci_client: OciClient::from_config(config)?
+            oci_client: OciClient::from_config(config)?,
         })
     }
 
-    pub async fn get_image_info(&self, app_name: &str, reference: Reference) -> Result<ImageInfo, Error> {
+    pub async fn get_image_info(
+        &self,
+        app_name: &str,
+        reference: Reference,
+    ) -> Result<ImageInfo, Error> {
         let manifest = self.oci_client.get_manifest(app_name, reference).await?;
         let config_digest_str = manifest.config().digest();
         let config_digest = Digest::try_from(config_digest_str.as_str())?;
 
-        let mut config_reader = self.oci_client.get_blob_reader(app_name, config_digest.clone()).await?;
+        let mut config_reader = self
+            .oci_client
+            .get_blob_reader(app_name, config_digest.clone())
+            .await?;
         let mut config_bytes = Vec::new();
         config_reader.read_to_end(&mut config_bytes).await?;
+
         if !verify_digest(&config_digest, &config_bytes) {
             error!("Digest of config returned by server differs from manifest");
             return Err(Error::DigestInvalidError);
@@ -69,11 +77,19 @@ impl Client {
         })
     }
 
-    pub async fn unpack_image(&self, image_info: ImageInfo, dest: impl AsRef<Path>, temp: impl AsRef<Path>) -> Result<(), Error> {
+    pub async fn unpack_image(
+        &self,
+        image_info: &ImageInfo,
+        dest: impl AsRef<Path>,
+        temp: impl AsRef<Path>,
+    ) -> Result<(), Error> {
         let image = Image::init(dest.as_ref());
         for (i, layer) in image_info.layers.iter().enumerate() {
             let layer_digest = Digest::try_from(layer.digest().as_str())?;
-            let mut layer_reader = self.oci_client.get_blob_reader(&image_info.app_name, layer_digest).await?;
+            let mut layer_reader = self
+                .oci_client
+                .get_blob_reader(&image_info.app_name, layer_digest)
+                .await?;
 
             let extension = match layer.media_type() {
                 MediaType::ImageLayer => "tar",
@@ -90,15 +106,26 @@ impl Client {
 
             layer_file.flush().await?;
 
-            let diff_id = image_info.config.rootfs().diff_ids().get(i).ok_or_else(|| {
-                error!("Not enough diff_ids for layers");
-                Error::LayerInvalidDiffIdError
-            })?;
+            let diff_id = image_info
+                .config
+                .rootfs()
+                .diff_ids()
+                .get(i)
+                .ok_or_else(|| {
+                    error!("Not enough diff_ids for layers");
+                    Error::LayerInvalidDiffIdError
+                })?;
 
             let diff_id_digest = Digest::try_from(diff_id.as_str())?;
 
-            info!("Unpacking layer {} onto {}", layer_path.as_path().display(), dest.as_ref().display());
-            image.unpack_layer(&layer_path, layer.media_type(), diff_id_digest).await?;
+            info!(
+                "Unpacking layer {} onto {}",
+                layer_path.as_path().display(),
+                dest.as_ref().display()
+            );
+            image
+                .unpack_layer(&layer_path, layer.media_type(), diff_id_digest)
+                .await?;
 
             remove_file(layer_path).await?;
         }
