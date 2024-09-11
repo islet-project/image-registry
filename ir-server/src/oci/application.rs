@@ -134,7 +134,7 @@ impl Application
     {
         let index = match ImageIndex::from_file(path) {
             Ok(i) => i,
-            Err(e) => err!("Error importing \"{}\": {}", INDEX_JSON, e)?,
+            Err(e) => err!("Error importing \"{}\": {}", path.display(), e)?,
         };
 
         index.validate()?;
@@ -151,7 +151,7 @@ impl Application
     {
         let manifest = match ImageManifest::from_file(path) {
             Ok(i) => i,
-            Err(e) => err!("Error importing \"{}\": {}", INDEX_JSON, e)?,
+            Err(e) => err!("Error importing \"{}\": {}", path.display(), e)?,
         };
 
         manifest.validate()?;
