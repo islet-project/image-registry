@@ -4,7 +4,7 @@ use std::sync::{PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use crate::error::RegistryError;
 use crate::{utils, RegistryResult};
 
-pub const DEFAULT_SERVER: &str = "registry";
+pub const DEFAULT_SERVER: &str = "../registry";
 pub const DEFAULT_CERT: &str = "certs/server.crt";
 pub const DEFAULT_KEY: &str = "certs/server.key";
 pub const DEFAULT_RATLS_VERAISON_KEY: &str = "ratls/pkey.jwk";
