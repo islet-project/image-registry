@@ -1,0 +1,15 @@
+# gen priv
+openssl ecparam -name secp384r1 -genkey -noout -out example/ecdsa_private_key.der -outform DER
+
+# extract pub
+openssl ec -in example/ecdsa_private_key.der -inform DER -pubout -out example/ecdsa_public_key.der -outform DER
+
+# verify both
+openssl ec -in example/ecdsa_private_key.der -inform DER -text -noout
+openssl ec -in example/ecdsa_public_key.der -inform DER -pubin -text -noout
+
+# sign
+openssl dgst -sha384 -sign example/ecdsa_private_key.der -keyform DER -out example/example.sig example/file.bin
+
+# verify
+openssl dgst -sha384 -verify example/ecdsa_public_key.der -keyform DER -signature example/example.sig example/file.bin

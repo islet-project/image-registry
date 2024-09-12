@@ -1,0 +1,17 @@
+[package]
+name = "ir-sign"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "*", features = [ "derive" ] }
+log = "*"
+env_logger = "*"
+rand_core = "*"
+hex = "*"
+oci-spec = "0.6"
+# crypto
+p384 = { version = "*", features = [ "ecdsa" ] }
+sec1 = { version = "*" }
+spki = { version = "*", features = [ "pem" ] }
+sha2 = { version = "*" }

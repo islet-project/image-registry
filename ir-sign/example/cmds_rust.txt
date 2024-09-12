@@ -1,0 +1,11 @@
+# gen priv
+cargo run -- gen-key -o example/ecdsa_private_key.der
+
+# extract pub
+cargo run -- extract-public -i example/ecdsa_private_key.der -o example/ecdsa_public_key.der
+
+# sign
+cargo run -- sign -k example/ecdsa_private_key.der -f example/file.bin -s example/example.sig
+
+# verify
+cargo run -- verify -k example/ecdsa_public_key.der -f example/file.bin -s example/example.sig
