@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use log::{error, info, warn};
+use log::{error, info};
 use oci_spec::image::{Descriptor, ImageConfiguration as OciConfig, MediaType};
 use tokio::fs::{remove_file, File};
 use tokio::io::{copy, AsyncReadExt, AsyncWriteExt};
