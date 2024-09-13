@@ -114,12 +114,12 @@ impl Digest
         Digest { algo, hash }
     }
 
-    pub fn get_algo(&self) -> &str
+    pub fn algo(&self) -> &str
     {
         &self.algo
     }
 
-    pub fn get_hash(&self) -> &str
+    pub fn hash(&self) -> &str
     {
         &self.hash
     }

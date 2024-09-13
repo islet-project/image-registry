@@ -98,9 +98,9 @@ pub(crate) fn rehash_file(blobs: &str, digest: &str) -> SignerResult<Option<Stri
     let path = blobs.join(digest.to_path());
     let mut file = std::fs::File::open(&path)?;
 
-    let hash = crypto::hash_reader(digest.get_algo(), &mut file)?;
+    let hash = crypto::hash_reader(digest.algo(), &mut file)?;
 
-    let new_digest = Digest::new_unchecked(digest.get_algo().to_string(), hex::encode(hash));
+    let new_digest = Digest::new_unchecked(digest.algo().to_string(), hex::encode(hash));
 
     if digest == new_digest {
         Ok(None)
