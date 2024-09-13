@@ -47,18 +47,18 @@ pub(crate) fn sign_vendor_pub(vendor_prv: &[u8], ca_prv: &[u8]) -> SignerResult<
     Ok(v_sign)
 }
 
-pub(crate) fn sign_config(
-    blobs: &str,
+pub(crate) fn sign_config<T: AsRef<Path>>(
+    blobs: T,
     digest: &str,
     vendor_prv: &[u8],
     vendor_pub_signature: &[u8],
 ) -> SignerResult<()>
 {
+    let blobs = blobs.as_ref();
+
     let v_prv = crypto::import_private(vendor_prv)?;
     let v_pub = crypto::extract_public(&v_prv);
     let v_pub_u8 = crypto::export_public(&v_pub)?;
-
-    let blobs = Path::new(blobs);
 
     // load manifest
     let manifest_digest = Digest::try_from(digest)?;
@@ -98,9 +98,9 @@ pub(crate) fn sign_config(
     Ok(())
 }
 
-pub(crate) fn rehash_file(blobs: &str, digest: &str) -> SignerResult<Option<String>>
+pub(crate) fn rehash_file<T: AsRef<Path>>(blobs: T, digest: &str) -> SignerResult<Option<String>>
 {
-    let blobs = Path::new(blobs);
+    let blobs = blobs.as_ref();
     let digest = Digest::try_from(digest)?;
     let path = blobs.join(digest.to_path());
     let mut file = File::open(&path)?;
@@ -118,10 +118,14 @@ pub(crate) fn rehash_file(blobs: &str, digest: &str) -> SignerResult<Option<Stri
     }
 }
 
-pub(crate) fn replace_hash_index(blobs: &str, file: &str, from: &str, to: &str)
-    -> SignerResult<()>
+pub(crate) fn replace_hash_index<T: AsRef<Path>>(
+    blobs: T,
+    file: &str,
+    from: &str,
+    to: &str,
+) -> SignerResult<()>
 {
-    let blobs = Path::new(blobs);
+    let blobs = blobs.as_ref();
     let path = blobs.join(file);
 
     let mut index = ImageIndex::from_file(&path)?;
@@ -144,9 +148,13 @@ pub(crate) fn replace_hash_index(blobs: &str, file: &str, from: &str, to: &str)
     Ok(())
 }
 
-pub(crate) fn verify_config(blobs: &str, digest: &str, ca_pub: &[u8]) -> SignerResult<()>
+pub(crate) fn verify_config<T: AsRef<Path>>(
+    blobs: T,
+    digest: &str,
+    ca_pub: &[u8],
+) -> SignerResult<()>
 {
-    let blobs = Path::new(blobs);
+    let blobs = blobs.as_ref();
 
     // load manifest
     let manifest_digest = Digest::try_from(digest)?;

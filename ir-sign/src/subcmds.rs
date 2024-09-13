@@ -123,10 +123,11 @@ pub(crate) fn cmd_sign_config(
     ca_pub: &str,
 ) -> SignerResult<()>
 {
-    let blobs = format!("{}/{}/blobs", registry, app);
+    let blobs = Path::new(registry).join(app).join("blobs");
     info!(
         "Signing config in manifest: \"{}\" in: \"{}\"",
-        digest, blobs
+        digest,
+        blobs.display()
     );
 
     let vendor_prv = utils::file_read(vendor_prv)?;
@@ -143,8 +144,8 @@ pub(crate) fn cmd_sign_config(
 
 pub(crate) fn cmd_rehash_file(registry: &str, app: &str, digest: &str) -> SignerResult<()>
 {
-    let blobs = format!("{}/{}/blobs", registry, app);
-    info!("Rehashing file: \"{}\" in: \"{}\"", digest, blobs);
+    let blobs = Path::new(registry).join(app).join("blobs");
+    info!("Rehashing file: \"{}\" in: \"{}\"", digest, blobs.display());
 
     let new_digest = oci::rehash_file(&blobs, digest)?;
 
@@ -184,14 +185,15 @@ pub(crate) fn cmd_sign_image(
         _ => err!("You need to pass either VENDOR_PUB_SIGNATURE and CA_PUB or CA_PRV")?,
     };
 
-    let blobs = format!("{}/{}/blobs", registry, app);
+    let blobs = Path::new(registry).join(app).join("blobs");
     info!(
         "Signing config for manifest: \"{}\" in: \"{}\"",
-        digest, blobs
+        digest,
+        blobs.display()
     );
     oci::sign_config(&blobs, digest, &vendor_prv, &vendor_sign)?;
 
-    info!("Rehashing file: \"{}\" in: \"{}\"", digest, blobs);
+    info!("Rehashing file: \"{}\" in: \"{}\"", digest, blobs.display());
     let new_digest = oci::rehash_file(&blobs, digest)?;
 
     if let Some(new_digest) = new_digest {
@@ -224,8 +226,8 @@ pub(crate) fn cmd_extract_sign_image(
         None => path.file_stem().unwrap().to_str().unwrap(),
     };
 
-    let app_dir = format!("{}/{}", registry, app_name);
-    info!("Unpacking \"{}\" into \"{}\"", filename, app_dir);
+    let app_dir = Path::new(registry).join(app_name);
+    info!("Unpacking \"{}\" into \"{}\"", filename, app_dir.display());
     std::fs::create_dir(&app_dir)?;
 
     let mut tar = tar::Archive::new(File::open(&path)?);
@@ -249,10 +251,11 @@ pub(crate) fn cmd_verify_image(
     ca_pub: &str,
 ) -> SignerResult<()>
 {
-    let blobs = format!("{}/{}/blobs", registry, app);
+    let blobs = Path::new(registry).join(app).join("blobs");
     info!(
         "Verifying config for manifest: \"{}\" in: \"{}\"",
-        digest, blobs
+        digest,
+        blobs.display()
     );
     let ca_pub = utils::file_read(ca_pub)?;
     oci::verify_config(&blobs, digest, &ca_pub)?;
