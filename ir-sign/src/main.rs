@@ -153,6 +153,26 @@ enum Commands
         #[arg(short = 'x', long)]
         ca_prv: Option<String>,
     },
+
+    /// Verify the image/config from a specific manifest
+    VerifyImage
+    {
+        /// Path to the registry
+        #[arg(short, long, default_value = "../registry")]
+        registry: String,
+
+        /// Name of the application in registry
+        #[arg(short, long, default_value = "com.samsung.example.app")]
+        app: String,
+
+        /// Digest of the manifest to verify
+        #[arg(short, long)]
+        digest: String,
+
+        /// Path to the root-ca public-key
+        #[arg(short, long)]
+        ca_pub: String,
+    },
 }
 
 fn main() -> SignerResult<()>
@@ -215,6 +235,12 @@ fn main() -> SignerResult<()>
             ca_pub.as_deref(),
             ca_prv.as_deref(),
         )?,
+        Commands::VerifyImage {
+            registry,
+            app,
+            digest,
+            ca_pub,
+        } => subcmds::cmd_verify_image(&registry, &app, &digest, &ca_pub)?,
     }
 
     Ok(())

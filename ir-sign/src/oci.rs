@@ -2,13 +2,18 @@ use oci_spec::image::{ImageIndex, ImageManifest};
 use std::collections::HashMap;
 use std::path::Path;
 
-use super::crypto;
-use super::digest::Digest;
-use super::SignerResult;
+use crate::{crypto, digest::Digest, error::SignerError, SignerResult};
 
 const ANNOTATION_SIGNATURE: &str = "com.samsung.islet.image.signature";
 const ANNOTATION_VENDORPUB: &str = "com.samsung.islet.image.vendorpub";
 const ANNOTATION_VENDORPUB_SIGNATURE: &str = "com.samsung.islet.image.vendorpub.signature";
+
+macro_rules! err {
+    ($($arg:tt)+) => (Err(SignerError::OciRegistry(format!($($arg)+))))
+}
+macro_rules! er {
+    ($($arg:tt)+) => (SignerError::OciRegistry(format!($($arg)+)))
+}
 
 pub(crate) fn verify_vendor_pub_signature(
     vendor_prv: &[u8],
@@ -133,6 +138,63 @@ pub(crate) fn replace_hash_index(blobs: &str, file: &str, from: &str, to: &str)
 
     index.set_manifests(manifests);
     index.to_file_pretty(&path)?;
+
+    Ok(())
+}
+
+pub(crate) fn verify_config(blobs: &str, digest: &str, ca_pub: &[u8]) -> SignerResult<()>
+{
+    let blobs = Path::new(blobs);
+
+    // load manifest
+    let manifest_digest = Digest::try_from(digest)?;
+    let manifest_path = blobs.join(manifest_digest.to_path());
+    let manifest = ImageManifest::from_file(&manifest_path)?;
+
+    // find config
+    let config_desc = manifest.config();
+    let config_digest = Digest::try_from(config_desc.digest())?;
+    let config_path = blobs.join(config_digest.to_path());
+
+    // check config hash first, just to be sure
+    let mut config = std::fs::File::open(&config_path)?;
+    let config_hash = crypto::hash_reader(config_digest.algo(), &mut config)?;
+    // config_hash is raw binary [u8], config_digest is hex String
+    let config_digest_hash = hex::decode(config_digest.hash().as_bytes())?;
+    if config_hash != config_digest_hash {
+        err!("Config hash mismatch")?;
+    }
+
+    // read data from manifest annotations
+    let annotations = manifest.annotations();
+    let Some(annotations) = annotations else {
+        return err!("Manifest does not contain annotations");
+    };
+    let config_sign = annotations
+        .get(ANNOTATION_SIGNATURE)
+        .ok_or(er!("Missing SIGNATURE annotation"))?;
+    let v_pub = annotations
+        .get(ANNOTATION_VENDORPUB)
+        .ok_or(er!("Missing VENDORPUB annotation"))?;
+    let v_pub_sig = annotations
+        .get(ANNOTATION_VENDORPUB_SIGNATURE)
+        .ok_or(er!("Missing VENDORPUB_SIGNATURE annotation"))?;
+
+    // all annotations are hex strings, convert to something usable
+    let config_sig = hex::decode(config_sign.as_bytes())?;
+    let v_pub_u8 = hex::decode(v_pub.as_bytes())?;
+    let v_pub_sig = hex::decode(v_pub_sig.as_bytes())?;
+
+    // verify the vendor_pub key
+    let c_pub = crypto::import_public(ca_pub)?;
+    crypto::verify(&c_pub, &v_pub_u8, &v_pub_sig)
+        .or(err!("Vendor pub signature verification failed"))?;
+
+    // verify the config signature
+    let v_pub = crypto::import_public(&v_pub_u8)?;
+    let mut config = std::fs::File::open(&config_path)?;
+    crypto::verify_reader(&v_pub, &mut config, &config_sig)
+        .or(err!("Config signature verification failed"))?;
 
     Ok(())
 }

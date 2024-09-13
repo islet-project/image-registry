@@ -205,3 +205,23 @@ pub(crate) fn cmd_sign_image(
 
     Ok(())
 }
+
+pub(crate) fn cmd_verify_image(
+    registry: &str,
+    app: &str,
+    digest: &str,
+    ca_pub: &str,
+) -> SignerResult<()>
+{
+    let blobs = format!("{}/{}/blobs", registry, app);
+    info!(
+        "Verifying config for manifest: \"{}\" in: \"{}\"",
+        digest, blobs
+    );
+
+    let ca_pub = utils::file_read(ca_pub)?;
+    oci::verify_config(&blobs, digest, &ca_pub)?;
+    info!("Verification succesful");
+
+    Ok(())
+}

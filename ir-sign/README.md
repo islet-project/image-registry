@@ -115,3 +115,19 @@ locally. This scenario instead of verifying the signature (as in realistic
 scenario) creates one (signs the Vendor public key with given ROOT-CA private
 key). The output of the command is the same as in the realistic scenario. The
 given manifest will contain all the same annotations.
+
+## Image verification
+
+A signed image can be verified with a simple command that only requires ROOT-CA
+public key. All the other data are taken from the manifest annotations and from
+files themselves.
+
+```
+cargo run -- verify-image -r REGISTRY_DIR -a APP_NAME -d MANIFEST_DIGEST -c root-ca.pub
+```
+
+This will verify the following:
+
+  * Hash of the config file (saved in manifest vs real file)
+  * Vendor public key signature (from annotations using `root-ca.pub`)
+  * Config signature (from annotations using Vendor public key)

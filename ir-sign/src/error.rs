@@ -7,6 +7,7 @@ pub enum SignerError
     Ecdsa(p384::ecdsa::Error),
     Der(sec1::der::Error),
     OciSpec(oci_spec::OciSpecError),
+    FromHex(hex::FromHexError),
     Crypto(String),
     OciRegistry(String),
     Generic(String),
@@ -25,6 +26,7 @@ impl std::fmt::Display for SignerError
             SignerError::Ecdsa(e) => write!(f, "EcdsaError({:?})", e),
             SignerError::Der(e) => write!(f, "DerError({:?})", e),
             SignerError::OciSpec(e) => write!(f, "OciSpecError({:?})", e),
+            SignerError::FromHex(e) => write!(f, "FromHexError({:?})", e),
             SignerError::Crypto(s) => write!(f, "CryptoError({})", s),
             SignerError::OciRegistry(s) => write!(f, "OciRegistryError({})", s),
             SignerError::Generic(s) => write!(f, "GenericError({})", s),
@@ -80,6 +82,14 @@ impl From<oci_spec::OciSpecError> for SignerError
     fn from(value: oci_spec::OciSpecError) -> Self
     {
         Self::OciSpec(value)
+    }
+}
+
+impl From<hex::FromHexError> for SignerError
+{
+    fn from(value: hex::FromHexError) -> Self
+    {
+        Self::FromHex(value)
     }
 }
 
