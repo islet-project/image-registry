@@ -21,7 +21,7 @@ sha2 = "*"
 hex = "*"
 pin-project = "*"
 
-oci-spec = "*"
+oci-spec = "0.6.8"
 
 async-compression = { version ="*", features = ["tokio", "gzip", "zstd"] }
 clean-path = "*"
