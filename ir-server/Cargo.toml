@@ -24,7 +24,7 @@ tower-http = { version = "*", features = ["add-extension", "trace"] }
 tower-service = "*"
 axum = "*"
 async-trait = "*"
-oci-spec = "*"
+oci-spec = "0.6"
 sha2 = "*"
 hex = "*"
 regex = "*"
