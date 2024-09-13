@@ -73,6 +73,7 @@ enum Commands
     },
 
     /// Sign a config for a specific manifest
+    #[command(hide(true))]
     SignConfig
     {
         /// Path to the registry
@@ -101,6 +102,7 @@ enum Commands
     },
 
     /// Rehash a file and rename it
+    #[command(hide(true))]
     RehashFile
     {
         /// Path to the registry
