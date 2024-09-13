@@ -1,8 +1,15 @@
 use std::sync::Arc;
 
-use rustls::{client::ResolvesClientCert, ClientConfig, RootCertStore};
+use rustls::{client::ResolvesClientCert, crypto::{ring::default_provider, CryptoProvider}, ClientConfig, RootCertStore};
 
 use crate::oci::service_url::{Scheme, HTTPS_SCHEME, HTTP_SCHEME};
+
+fn install_default_crypto_provider() {
+    if CryptoProvider::get_default().is_none() {
+        default_provider().install_default().expect("Failed to install CryptoProvider");
+    }
+}
+
 
 pub(crate) enum ConnectionMode {
     None,
@@ -72,6 +79,7 @@ impl ConfigBuilder<WantsHost> {
     }
 
     pub fn rustls_no_auth(self, root_cert_store: RootCertStore) -> Config {
+        install_default_crypto_provider();
         let rustls_config = ClientConfig::builder()
             .with_root_certificates(root_cert_store)
             .with_no_client_auth();
@@ -83,6 +91,7 @@ impl ConfigBuilder<WantsHost> {
     }
 
     pub fn ratls(self, root_cert_store: RootCertStore, resolver: Arc<dyn ResolvesClientCert>) -> Config {
+        install_default_crypto_provider();
         let rustls_config = ClientConfig::builder()
             .with_root_certificates(root_cert_store)
             .with_client_cert_resolver(resolver);
