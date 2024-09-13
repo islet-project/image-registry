@@ -116,6 +116,24 @@ scenario) creates one (signs the Vendor public key with given ROOT-CA private
 key). The output of the command is the same as in the realistic scenario. The
 given manifest will contain all the same annotations.
 
+## Image extract and signing directly from OCI image archive
+
+Images can be extracted and then signed directly from OCI image archives
+(e.g. produced by docker export/save commands).
+
+A command to do this is `extract-sign-image`. It's very similar to
+`sign-image`. The only difference is that it will first extract the TAR archive
+into registry (only uncompressed TAR files are supported now).
+
+```
+cargo run -- extract-sign-image -r REGISTRY_DIR -f OCI_IMAGE_TAR -a OPTIONAL_APP_NAME -d MANIFEST_DIGEST -v vendor.prv [OTHER_CRYPTO_PARAMS]
+```
+
+`OPTIONAL_APP_NAME` is an app name that will be created in the registry. If
+ommited a filename will be used (e.g. for `nginx.tar` an app name `nginx` will
+be used). The rest is the same as for `sign-image` with `OTHER_CRYPTO_PARAMS`
+dependent on realistic or simplified scenario.
+
 ## Image verification
 
 A signed image can be verified with a simple command that only requires ROOT-CA

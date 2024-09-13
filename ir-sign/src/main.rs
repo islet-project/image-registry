@@ -154,6 +154,46 @@ enum Commands
         ca_prv: Option<String>,
     },
 
+    /// Extract and sign the image/config from a specific manifest and fix the application
+    /// You need to pass one of the two:
+    ///   1. VENDOR_PUB_SIGNATURE and CA_PUB
+    ///   2. CA_PRV
+    #[command(verbatim_doc_comment)]
+    ExtractSignImage
+    {
+        /// Path to the registry
+        #[arg(short, long, default_value = "../registry")]
+        registry: String,
+
+        /// Unpacked TAR filename with the OCI image to extract
+        #[arg(short, long)]
+        filename: String,
+
+        /// Name of the application to extract to (use filename by default)
+        #[arg(short, long)]
+        app: Option<String>,
+
+        /// Digest of the manifest to sign
+        #[arg(short, long)]
+        digest: String,
+
+        /// Path to the vendor private key
+        #[arg(short, long)]
+        vendor_prv: String,
+
+        /// Path to the signature of vendor public key signed by root-ca
+        #[arg(short = 's', long)]
+        vendor_pub_signature: Option<String>,
+
+        /// Path to the root-ca public-key
+        #[arg(short, long)]
+        ca_pub: Option<String>,
+
+        /// Path to the root-ca private key
+        #[arg(short = 'x', long)]
+        ca_prv: Option<String>,
+    },
+
     /// Verify the image/config from a specific manifest
     VerifyImage
     {
@@ -229,6 +269,25 @@ fn main() -> SignerResult<()>
         } => subcmds::cmd_sign_image(
             &registry,
             &app,
+            &digest,
+            &vendor_prv,
+            vendor_pub_signature.as_deref(),
+            ca_pub.as_deref(),
+            ca_prv.as_deref(),
+        )?,
+        Commands::ExtractSignImage {
+            registry,
+            filename,
+            app,
+            digest,
+            vendor_prv,
+            vendor_pub_signature,
+            ca_pub,
+            ca_prv,
+        } => subcmds::cmd_extract_sign_image(
+            &registry,
+            &filename,
+            app.as_deref(),
             &digest,
             &vendor_prv,
             vendor_pub_signature.as_deref(),

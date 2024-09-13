@@ -1,5 +1,6 @@
 use log::info;
 use std::fs::File;
+use std::path::Path;
 
 use crate::{crypto, error::SignerError, oci, utils, SignerResult};
 
@@ -204,6 +205,41 @@ pub(crate) fn cmd_sign_image(
     info!("Config signed for a given manifest");
 
     Ok(())
+}
+
+pub(crate) fn cmd_extract_sign_image(
+    registry: &str,
+    filename: &str,
+    app: Option<&str>,
+    digest: &str,
+    vendor_prv: &str,
+    vendor_pub_signature: Option<&str>,
+    ca_pub: Option<&str>,
+    ca_prv: Option<&str>,
+) -> SignerResult<()>
+{
+    let path = Path::new(filename);
+    let app_name = match app {
+        Some(a) => a,
+        None => path.file_stem().unwrap().to_str().unwrap(),
+    };
+
+    let app_dir = format!("{}/{}", registry, app_name);
+    info!("Unpacking \"{}\" into \"{}\"", filename, app_dir);
+    std::fs::create_dir(&app_dir)?;
+
+    let mut tar = tar::Archive::new(File::open(&path)?);
+    tar.unpack(&app_dir)?;
+
+    cmd_sign_image(
+        registry,
+        app_name,
+        digest,
+        vendor_prv,
+        vendor_pub_signature,
+        ca_pub,
+        ca_prv,
+    )
 }
 
 pub(crate) fn cmd_verify_image(
