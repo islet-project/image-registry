@@ -120,7 +120,7 @@ pub(crate) fn rehash_file<T: AsRef<Path>>(blobs: T, digest: &str) -> SignerResul
 
 pub(crate) fn replace_hash_index<T: AsRef<Path>>(
     blobs: T,
-    file: &str,
+    file: T,
     from: &str,
     to: &str,
 ) -> SignerResult<()>

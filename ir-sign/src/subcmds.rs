@@ -4,6 +4,9 @@ use std::path::Path;
 
 use crate::{crypto, error::SignerError, oci, utils, SignerResult};
 
+const INDEX_JSON: &str = "index.json";
+const BLOBS_SUBDIR: &str = "blobs";
+
 macro_rules! err {
     ($($arg:tt)+) => (Err(SignerError::OciRegistry(format!($($arg)+))))
 }
@@ -123,7 +126,7 @@ pub(crate) fn cmd_sign_config(
     ca_pub: &str,
 ) -> SignerResult<()>
 {
-    let blobs = Path::new(registry).join(app).join("blobs");
+    let blobs = Path::new(registry).join(app).join(BLOBS_SUBDIR);
     info!(
         "Signing config in manifest: \"{}\" in: \"{}\"",
         digest,
@@ -144,7 +147,7 @@ pub(crate) fn cmd_sign_config(
 
 pub(crate) fn cmd_rehash_file(registry: &str, app: &str, digest: &str) -> SignerResult<()>
 {
-    let blobs = Path::new(registry).join(app).join("blobs");
+    let blobs = Path::new(registry).join(app).join(BLOBS_SUBDIR);
     info!("Rehashing file: \"{}\" in: \"{}\"", digest, blobs.display());
 
     let new_digest = oci::rehash_file(&blobs, digest)?;
@@ -185,7 +188,7 @@ pub(crate) fn cmd_sign_image(
         _ => err!("You need to pass either VENDOR_PUB_SIGNATURE and CA_PUB or CA_PRV")?,
     };
 
-    let blobs = Path::new(registry).join(app).join("blobs");
+    let blobs = Path::new(registry).join(app).join(BLOBS_SUBDIR);
     info!(
         "Signing config for manifest: \"{}\" in: \"{}\"",
         digest,
@@ -199,7 +202,8 @@ pub(crate) fn cmd_sign_image(
     if let Some(new_digest) = new_digest {
         info!("Rehashed to: \"{}\"", new_digest);
         info!("Updating layout index");
-        oci::replace_hash_index(&blobs, "../index.json", digest, &new_digest)?;
+        let index = Path::new("..").join(INDEX_JSON);
+        oci::replace_hash_index(&blobs, &index, digest, &new_digest)?;
     } else {
         info!("File does not require renaming");
     }
@@ -251,7 +255,7 @@ pub(crate) fn cmd_verify_image(
     ca_pub: &str,
 ) -> SignerResult<()>
 {
-    let blobs = Path::new(registry).join(app).join("blobs");
+    let blobs = Path::new(registry).join(app).join(BLOBS_SUBDIR);
     info!(
         "Verifying config for manifest: \"{}\" in: \"{}\"",
         digest,
