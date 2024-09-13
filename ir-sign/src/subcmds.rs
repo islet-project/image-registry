@@ -234,7 +234,7 @@ pub(crate) fn cmd_extract_sign_image(
     info!("Unpacking \"{}\" into \"{}\"", filename, app_dir.display());
     std::fs::create_dir(&app_dir)?;
 
-    let mut tar = tar::Archive::new(File::open(&path)?);
+    let mut tar = tar::Archive::new(File::open(path)?);
     tar.unpack(&app_dir)?;
 
     cmd_sign_image(

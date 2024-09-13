@@ -130,11 +130,11 @@ impl Application
         Ok(())
     }
 
-    fn import_index(&mut self, path: &Path, layout_index: bool) -> RegistryResult<()>
+    fn import_index<T: AsRef<Path>>(&mut self, path: T, layout_index: bool) -> RegistryResult<()>
     {
-        let index = match ImageIndex::from_file(path) {
+        let index = match ImageIndex::from_file(&path) {
             Ok(i) => i,
-            Err(e) => err!("Error importing \"{}\": {}", path.display(), e)?,
+            Err(e) => err!("Error importing \"{}\": {}", path.as_ref().display(), e)?,
         };
 
         index.validate()?;
@@ -147,11 +147,11 @@ impl Application
         Ok(())
     }
 
-    fn import_manifest(&mut self, path: &Path) -> RegistryResult<()>
+    fn import_manifest<T: AsRef<Path>>(&mut self, path: T) -> RegistryResult<()>
     {
-        let manifest = match ImageManifest::from_file(path) {
+        let manifest = match ImageManifest::from_file(&path) {
             Ok(i) => i,
-            Err(e) => err!("Error importing \"{}\": {}", path.display(), e)?,
+            Err(e) => err!("Error importing \"{}\": {}", path.as_ref().display(), e)?,
         };
 
         manifest.validate()?;
@@ -167,10 +167,10 @@ impl Application
         Ok(())
     }
 
-    fn new(path: &Path) -> Self
+    fn new<T: AsRef<Path>>(path: T) -> Self
     {
         Self {
-            path: path.to_owned(),
+            path: path.as_ref().to_path_buf(),
             ..Default::default()
         }
     }
@@ -190,11 +190,13 @@ impl Application
         &self.blobs
     }
 
-    pub(super) fn import(path: &Path) -> RegistryResult<Self>
+    pub(super) fn import<T: AsRef<Path>>(path: T) -> RegistryResult<Self>
     {
+        let path = path.as_ref().canonicalize()?;
+
         info!("Loading application from: \"{}\"", path.display());
 
-        let mut app = Application::new(path);
+        let mut app = Application::new(&path);
 
         let oci_layout = match OciLayout::from_file(path.join(OCI_LAYOUT)) {
             Ok(l) => l,

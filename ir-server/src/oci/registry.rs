@@ -23,15 +23,17 @@ pub struct Registry
 
 impl Registry
 {
-    pub fn import(path: &str) -> RegistryResult<Self>
+    pub fn import<T: AsRef<Path>>(path: T) -> RegistryResult<Self>
     {
-        info!("Loading registry from: \"{}\"", path);
+        let path = path.as_ref().canonicalize()?;
+
+        info!("Loading registry from: \"{}\"", path.display());
 
         let mut reg = Registry::default();
 
-        let reg_path = Path::new(path);
+        let reg_path = Path::new(&path);
         if !reg_path.is_dir() {
-            err!("Registry path \"{}\" is not a directory", path)?;
+            err!("Registry path \"{}\" is not a directory", path.display())?;
         }
 
         for file in std::fs::read_dir(reg_path)? {
