@@ -8,6 +8,10 @@ use tokio_rustls::rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use crate::error::RegistryError;
 use crate::RegistryResult;
 
+macro_rules! err {
+    ($($arg:tt)+) => (Err(RegistryError::PrivateKeyParsing(format!($($arg)+))))
+}
+
 pub fn get_crate_root() -> String
 {
     // try with env variable first, it won't work without cargo run
@@ -55,12 +59,8 @@ pub(crate) fn load_private_key_from_file<'a>(path: &str) -> RegistryResult<Priva
     let mut keys =
         rustls_pemfile::pkcs8_private_keys(&mut reader).collect::<Result<Vec<_>, _>>()?;
     match keys.len() {
-        0 => Err(RegistryError::PrivateKeyParsing(format!(
-            "No PKCS8-encoded private key found in {path}"
-        ))),
+        0 => err!("No PKCS8-encoded private key found in {path}"),
         1 => Ok(PrivateKeyDer::Pkcs8(keys.remove(0))),
-        _ => Err(RegistryError::PrivateKeyParsing(format!(
-            "More than one PKCS8-encoded private key found in {path}"
-        ))),
+        _ => err!("More than one PKCS8-encoded private key found in {path}"),
     }
 }

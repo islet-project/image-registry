@@ -12,6 +12,10 @@ macro_rules! err {
     ($($arg:tt)+) => (Err(RegistryError::OciRegistry(format!($($arg)+))))
 }
 
+macro_rules! er {
+    ($($arg:tt)+) => (RegistryError::OciRegistry(format!($($arg)+)))
+}
+
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub struct Digest
 {
@@ -105,8 +109,7 @@ impl Digest
             a => err!("Wrong hash algorithm: {}", a)?,
         }
 
-        hex::decode(&hash)
-            .map_err(|e| RegistryError::OciRegistry(format!("Incorrect hash string: {}", e)))?;
+        hex::decode(&hash).map_err(|e| er!("Incorrect hash string: {}", e))?;
 
         Ok(Digest { algo, hash })
     }
