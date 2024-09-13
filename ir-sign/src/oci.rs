@@ -27,7 +27,8 @@ pub(crate) fn verify_vendor_pub_signature(
     let c_pub = crypto::import_public(ca_pub)?;
 
     // verify the vendor_pub_signature with public ca key
-    crypto::verify(&c_pub, &v_pub_u8, vendor_pub_signature)?;
+    crypto::verify(&c_pub, &v_pub_u8, vendor_pub_signature)
+        .or(err!("Vendor pub signature verification failed"))?;
 
     Ok(())
 }

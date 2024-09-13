@@ -86,7 +86,7 @@ pub(crate) fn cmd_verify(key: &str, file: &str, signature: &str) -> SignerResult
     let msg = utils::file_read(file)?;
     let sign = utils::file_read(signature)?;
 
-    crypto::verify(&public, &msg, &sign)?;
+    crypto::verify(&public, &msg, &sign).or(err!("Signature verification failed"))?;
 
     info!("File verified");
 
@@ -105,7 +105,7 @@ pub(crate) fn cmd_verify_buf(key: &str, file: &str, signature: &str) -> SignerRe
     let mut msg = std::fs::File::open(file)?;
     let sign = utils::file_read(signature)?;
 
-    crypto::verify_reader(&public, &mut msg, &sign)?;
+    crypto::verify_reader(&public, &mut msg, &sign).or(err!("Signature verification failed"))?;
 
     info!("File verified");
 
