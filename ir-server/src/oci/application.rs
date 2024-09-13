@@ -11,7 +11,7 @@ use super::sha2;
 use super::tag;
 use super::validate::Validate;
 use crate::error::RegistryError;
-use crate::RegistryResult;
+use crate::{utils, RegistryResult};
 
 const OCI_LAYOUT: &str = "oci-layout";
 const INDEX_JSON: &str = "index.json";
@@ -75,7 +75,7 @@ impl Application
         }
 
         let size: u64 = desc.size().try_into().or(err!("File size negative"))?;
-        let file_size = std::fs::metadata(&path)?.len();
+        let file_size = utils::file_len(&path)?;
         if file_size != size {
             err!("Wrong file length: {}, expected: {}", file_size, size)?;
         }

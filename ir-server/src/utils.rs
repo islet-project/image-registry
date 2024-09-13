@@ -31,7 +31,7 @@ pub fn get_crate_root() -> String
 }
 
 #[allow(dead_code)]
-pub fn file_read(filename: &str) -> std::io::Result<Vec<u8>>
+pub fn file_read<T: AsRef<Path>>(filename: T) -> std::io::Result<Vec<u8>>
 {
     let mut buf = Vec::new();
     File::open(filename)?.read_to_end(&mut buf)?;
@@ -39,22 +39,31 @@ pub fn file_read(filename: &str) -> std::io::Result<Vec<u8>>
 }
 
 #[allow(dead_code)]
-pub fn file_write(filename: &str, data: &[u8]) -> std::io::Result<()>
+pub fn file_write<T: AsRef<Path>>(filename: T, data: &[u8]) -> std::io::Result<()>
 {
     File::create(filename)?.write_all(data)
 }
 
-pub(crate) fn load_certificates_from_pem<'a>(path: &str)
-    -> std::io::Result<Vec<CertificateDer<'a>>>
+#[allow(dead_code)]
+pub fn file_len<T: AsRef<Path>>(filename: T) -> std::io::Result<u64>
+{
+    Ok(std::fs::metadata(filename)?.len())
+}
+
+pub(crate) fn load_certificates_from_pem<'a, T: AsRef<Path>>(
+    path: T,
+) -> std::io::Result<Vec<CertificateDer<'a>>>
 {
     let file = File::open(path)?;
     let mut reader = BufReader::new(file);
     rustls_pemfile::certs(&mut reader).collect()
 }
 
-pub(crate) fn load_private_key_from_file<'a>(path: &str) -> RegistryResult<PrivateKeyDer<'a>>
+pub(crate) fn load_private_key_from_file<'a, T>(path: T) -> RegistryResult<PrivateKeyDer<'a>>
+where
+    T: AsRef<Path> + std::fmt::Display,
 {
-    let file = File::open(path)?;
+    let file = File::open(&path)?;
     let mut reader = BufReader::new(file);
     let mut keys =
         rustls_pemfile::pkcs8_private_keys(&mut reader).collect::<Result<Vec<_>, _>>()?;

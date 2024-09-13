@@ -1,4 +1,5 @@
 use log::info;
+use std::fs::File;
 
 use crate::{crypto, error::SignerError, oci, utils, SignerResult};
 
@@ -63,7 +64,7 @@ pub(crate) fn cmd_sign_buf(key: &str, file: &str, signature: &str) -> SignerResu
 
     let der = utils::file_read(key)?;
     let private = crypto::import_private(&der)?;
-    let mut msg = std::fs::File::open(file)?;
+    let mut msg = File::open(file)?;
 
     let sign = crypto::sign_reader(&private, &mut msg)?;
     utils::file_write(signature, &sign)?;
@@ -102,7 +103,7 @@ pub(crate) fn cmd_verify_buf(key: &str, file: &str, signature: &str) -> SignerRe
 
     let der = utils::file_read(key)?;
     let public = crypto::import_public(&der)?;
-    let mut msg = std::fs::File::open(file)?;
+    let mut msg = File::open(file)?;
     let sign = utils::file_read(signature)?;
 
     crypto::verify_reader(&public, &mut msg, &sign).or(err!("Signature verification failed"))?;
@@ -187,7 +188,6 @@ pub(crate) fn cmd_sign_image(
         "Signing config for manifest: \"{}\" in: \"{}\"",
         digest, blobs
     );
-
     oci::sign_config(&blobs, digest, &vendor_prv, &vendor_sign)?;
 
     info!("Rehashing file: \"{}\" in: \"{}\"", digest, blobs);
@@ -218,9 +218,9 @@ pub(crate) fn cmd_verify_image(
         "Verifying config for manifest: \"{}\" in: \"{}\"",
         digest, blobs
     );
-
     let ca_pub = utils::file_read(ca_pub)?;
     oci::verify_config(&blobs, digest, &ca_pub)?;
+
     info!("Verification succesful");
 
     Ok(())

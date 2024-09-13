@@ -1,8 +1,9 @@
 use oci_spec::image::{ImageIndex, ImageManifest};
 use std::collections::HashMap;
+use std::fs::File;
 use std::path::Path;
 
-use crate::{crypto, digest::Digest, error::SignerError, SignerResult};
+use crate::{crypto, digest::Digest, error::SignerError, utils, SignerResult};
 
 const ANNOTATION_SIGNATURE: &str = "com.samsung.islet.image.signature";
 const ANNOTATION_VENDORPUB: &str = "com.samsung.islet.image.vendorpub";
@@ -70,7 +71,7 @@ pub(crate) fn sign_config(
     let config_path = blobs.join(config_digest.to_path());
 
     // sign the config with vendor key
-    let mut config = std::fs::File::open(config_path)?;
+    let mut config = File::open(config_path)?;
     let config_sign = crypto::sign_reader(&v_prv, &mut config)?;
 
     // get/create annotations
@@ -102,7 +103,7 @@ pub(crate) fn rehash_file(blobs: &str, digest: &str) -> SignerResult<Option<Stri
     let blobs = Path::new(blobs);
     let digest = Digest::try_from(digest)?;
     let path = blobs.join(digest.to_path());
-    let mut file = std::fs::File::open(&path)?;
+    let mut file = File::open(&path)?;
 
     let hash = crypto::hash_reader(digest.algo(), &mut file)?;
 
@@ -130,7 +131,7 @@ pub(crate) fn replace_hash_index(blobs: &str, file: &str, from: &str, to: &str)
         if descriptor.digest() == from {
             let new_digest = Digest::try_from(to)?;
             let path = blobs.join(new_digest.to_path());
-            let size = std::fs::metadata(&path)?.len();
+            let size = utils::file_len(&path)?;
 
             descriptor.set_digest(to.to_string());
             descriptor.set_size(size.try_into().unwrap());
@@ -158,7 +159,7 @@ pub(crate) fn verify_config(blobs: &str, digest: &str, ca_pub: &[u8]) -> SignerR
     let config_path = blobs.join(config_digest.to_path());
 
     // check config hash first, just to be sure
-    let mut config = std::fs::File::open(&config_path)?;
+    let mut config = File::open(&config_path)?;
     let config_hash = crypto::hash_reader(config_digest.algo(), &mut config)?;
     // config_hash is raw binary [u8], config_digest is hex String
     let config_digest_hash = hex::decode(config_digest.hash().as_bytes())?;
@@ -193,7 +194,7 @@ pub(crate) fn verify_config(blobs: &str, digest: &str, ca_pub: &[u8]) -> SignerR
 
     // verify the config signature
     let v_pub = crypto::import_public(&v_pub_u8)?;
-    let mut config = std::fs::File::open(&config_path)?;
+    let mut config = File::open(&config_path)?;
     crypto::verify_reader(&v_pub, &mut config, &config_sig)
         .or(err!("Config signature verification failed"))?;
 
