@@ -84,6 +84,7 @@ impl Client {
         temp: impl AsRef<Path>,
     ) -> Result<(), Error> {
         let image = Image::init(dest.as_ref());
+        info!("Image has {} layer(s)", image_info.layers.len());
         for (i, layer) in image_info.layers.iter().enumerate() {
             let layer_digest = Digest::try_from(layer.digest().as_str())?;
             let mut layer_reader = self
@@ -129,6 +130,7 @@ impl Client {
 
             remove_file(layer_path).await?;
         }
+        info!("Image unpacked succesfully");
         Ok(())
     }
 }
