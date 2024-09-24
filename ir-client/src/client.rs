@@ -17,17 +17,13 @@ use crate::verify_digest;
 pub struct ImageInfo {
     pub(crate) app_name: String,
     pub(crate) layers: Vec<Descriptor>,
-    config_digest: Digest,
-    config: OciConfig,
+    config_bytes: Vec<u8>,
     annotations: Option<HashMap<String, String>>,
 }
 
 impl ImageInfo {
-    pub fn config(&self) -> &OciConfig {
-        &self.config
-    }
-    pub fn config_digest(&self) -> &Digest {
-        &self.config_digest
+    pub fn config_bytes(&self) -> &[u8] {
+        &self.config_bytes
     }
     pub fn annotations(&self) -> Option<&HashMap<String, String>> {
         self.annotations.as_ref()
@@ -66,12 +62,9 @@ impl Client {
             return Err(Error::DigestInvalidError);
         }
 
-        let config: OciConfig = serde_json::from_slice(&config_bytes)?;
-
         Ok(ImageInfo {
             app_name: app_name.to_string(),
-            config,
-            config_digest,
+            config_bytes,
             annotations: manifest.annotations().clone(),
             layers: manifest.layers().clone(),
         })
@@ -107,8 +100,8 @@ impl Client {
 
             layer_file.flush().await?;
 
-            let diff_id = image_info
-                .config
+            let config: OciConfig = serde_json::from_slice(image_info.config_bytes())?;
+            let diff_id = config
                 .rootfs()
                 .diff_ids()
                 .get(i)
