@@ -1,5 +1,5 @@
-use std::sync::Arc;
-use std::io::Read;
+use std::{fs::File, sync::Arc};
+use std::io::{Read, Write};
 
 use ir_client::oci::{blocking::client::Client, reference::{Digest, Reference, Tag}};
 use ir_client::{config::Config, verify_digest};
@@ -62,10 +62,6 @@ struct GetManifestArgs {
     /// Reference of manifest [digest or tag]
     #[arg(short, long)]
     reference: String,
-
-    /// filename to write image JSON [default: ./{uuid}.json]
-    #[arg(short, long)]
-    out: Option<String>,
 }
 
 #[derive(Args, Debug)]
@@ -153,6 +149,11 @@ fn main() {
             info!("Digest: {}", digest.to_string());
 
             verify_digest(digest, &blob_buf);
+
+            if let Some(output) = &args.out {
+                let mut file = File::create(output).unwrap();
+                file.write_all(&blob_buf).unwrap();
+            }
         },
         Commands::ListTags(args) => {
             let last = args.last.clone().map(|user_tag| Tag::try_from(user_tag.as_str()).unwrap());

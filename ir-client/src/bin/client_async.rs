@@ -6,7 +6,7 @@ use ir_client::{config::Config, verify_digest};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use log::info;
 use ratls::{load_root_cert_store, RaTlsCertResolver, TokenFromFile};
-use tokio::io::AsyncReadExt;
+use tokio::{fs::File, io::{AsyncReadExt, AsyncWriteExt}};
 
 #[derive(ValueEnum, Default, Debug, Clone)]
 pub enum ConnectionType {
@@ -62,10 +62,6 @@ struct GetManifestArgs {
     /// Reference of manifest [digest or tag]
     #[arg(short, long)]
     reference: String,
-
-    /// filename to write image JSON [default: ./{uuid}.json]
-    #[arg(short, long)]
-    out: Option<String>,
 }
 
 #[derive(Args, Debug)]
@@ -158,6 +154,11 @@ async fn main() {
             let digest = blob_reader.digest().as_ref().unwrap();
             info!("Blob digest: {}", digest.to_string());
             verify_digest(digest, &buf);
+
+            if let Some(output) = &args.out {
+                let mut file = File::create(output).await.unwrap();
+                file.write_all(&buf).await.unwrap();
+            }
         },
         Commands::ListTags(args) => {
             let last = args.last.clone().map(|user_tag| Tag::try_from(user_tag.as_str()).unwrap());
