@@ -32,6 +32,6 @@ axum-extra = { version = "*", features = ["typed-header"] }
 pin-project-lite = "*"
 bytes = "*"
 # RA-TLS
-ratls = { git = "https://github.com/islet-project/remote-attestation", branch = "dev/z.abramowska/temp-2" }
-realm-verifier = { git = "https://github.com/islet-project/remote-attestation", branch = "dev/z.abramowska/temp-2"  }
-veraison-verifier = { git = "https://github.com/islet-project/remote-attestation", branch = "dev/z.abramowska/temp-2"  }
+ratls = { git = "https://github.com/islet-project/remote-attestation", branch = "disable-challenge-veraison" }
+realm-verifier = { git = "https://github.com/islet-project/remote-attestation", branch = "disable-challenge-veraison" }
+veraison-verifier = { git = "https://github.com/islet-project/remote-attestation", branch = "disable-challenge-veraison" }
