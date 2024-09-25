@@ -61,6 +61,14 @@ impl Registry
         Ok(reg)
     }
 
+    pub fn log_summary(&self)
+    {
+        info!("Application list with tags:");
+        for (k, v) in &self.apps {
+            info!("    {} {:?}", k, v.get_tags().keys());
+        }
+    }
+
     async fn get_payload(content: &Content) -> Option<Payload>
     {
         let file = match fs::File::open(&content.path).await {
