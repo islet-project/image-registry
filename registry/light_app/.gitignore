@@ -3,6 +3,6 @@ blobs/
 compile_commands.json
 print
 light_app.tar
-manifest.json
+*.json
 oci-layout
 repositories
