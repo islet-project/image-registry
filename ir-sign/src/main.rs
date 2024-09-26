@@ -133,9 +133,9 @@ enum Commands
         #[arg(short, long, default_value = "com.samsung.example.app")]
         app: String,
 
-        /// Digest of the manifest to sign
-        #[arg(short, long)]
-        digest: String,
+        /// Reference of the manifest to sign
+        #[arg(short = 'd', long)]
+        reference: String,
 
         /// Path to the vendor private key
         #[arg(short, long)]
@@ -173,9 +173,9 @@ enum Commands
         #[arg(short, long)]
         app: Option<String>,
 
-        /// Digest of the manifest to sign
-        #[arg(short, long)]
-        digest: String,
+        /// Reference of the manifest to sign
+        #[arg(short = 'd', long)]
+        reference: String,
 
         /// Path to the vendor private key
         #[arg(short, long)]
@@ -205,9 +205,9 @@ enum Commands
         #[arg(short, long, default_value = "com.samsung.example.app")]
         app: String,
 
-        /// Digest of the manifest to verify
-        #[arg(short, long)]
-        digest: String,
+        /// Reference of the manifest to verify
+        #[arg(short = 'd', long)]
+        reference: String,
 
         /// Path to the root-ca public-key
         #[arg(short, long)]
@@ -257,7 +257,7 @@ fn main() -> SignerResult<()>
         Commands::SignImage {
             registry,
             app,
-            digest,
+            reference,
             vendor_prv,
             vendor_pub_signature,
             ca_pub,
@@ -265,7 +265,7 @@ fn main() -> SignerResult<()>
         } => subcmds::cmd_sign_image(
             &registry,
             &app,
-            &digest,
+            &reference,
             &vendor_prv,
             vendor_pub_signature.as_deref(),
             ca_pub.as_deref(),
@@ -275,7 +275,7 @@ fn main() -> SignerResult<()>
             registry,
             filename,
             app,
-            digest,
+            reference,
             vendor_prv,
             vendor_pub_signature,
             ca_pub,
@@ -284,7 +284,7 @@ fn main() -> SignerResult<()>
             &registry,
             &filename,
             app.as_deref(),
-            &digest,
+            &reference,
             &vendor_prv,
             vendor_pub_signature.as_deref(),
             ca_pub.as_deref(),
@@ -293,9 +293,9 @@ fn main() -> SignerResult<()>
         Commands::VerifyImage {
             registry,
             app,
-            digest,
+            reference,
             ca_pub,
-        } => subcmds::cmd_verify_image(&registry, &app, &digest, &ca_pub)?,
+        } => subcmds::cmd_verify_image(&registry, &app, &reference, &ca_pub)?,
     }
 
     Ok(())

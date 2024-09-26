@@ -164,7 +164,7 @@ pub(crate) fn cmd_rehash_file(registry: &str, app: &str, digest: &str) -> Signer
 pub(crate) fn cmd_sign_image(
     registry: &str,
     app: &str,
-    digest: &str,
+    reference: &str,
     vendor_prv: &str,
     vendor_pub_signature: Option<&str>,
     ca_pub: Option<&str>,
@@ -188,22 +188,24 @@ pub(crate) fn cmd_sign_image(
         _ => err!("You need to pass either VENDOR_PUB_SIGNATURE and CA_PUB or CA_PRV")?,
     };
 
-    let blobs = Path::new(registry).join(app).join(BLOBS_SUBDIR);
+    let app = Path::new(registry).join(app);
+    let blobs = app.join(BLOBS_SUBDIR);
     info!(
         "Signing config for manifest: \"{}\" in: \"{}\"",
-        digest,
-        blobs.display()
+        reference,
+        app.display()
     );
-    oci::sign_config(&blobs, digest, &vendor_prv, &vendor_sign)?;
+    let digest = oci::find_manifest_by_reference(&app, reference)?;
+    oci::sign_config(&blobs, &digest, &vendor_prv, &vendor_sign)?;
 
     info!("Rehashing file: \"{}\" in: \"{}\"", digest, blobs.display());
-    let new_digest = oci::rehash_file(&blobs, digest)?;
+    let new_digest = oci::rehash_file(&blobs, &digest)?;
 
     if let Some(new_digest) = new_digest {
         info!("Rehashed to: \"{}\"", new_digest);
         info!("Updating layout index");
         let index = Path::new("..").join(INDEX_JSON);
-        oci::replace_hash_index(&blobs, &index, digest, &new_digest)?;
+        oci::replace_hash_index(&blobs, &index, &digest, &new_digest)?;
     } else {
         info!("File does not require renaming");
     }
@@ -217,7 +219,7 @@ pub(crate) fn cmd_extract_sign_image(
     registry: &str,
     filename: &str,
     app: Option<&str>,
-    digest: &str,
+    reference: &str,
     vendor_prv: &str,
     vendor_pub_signature: Option<&str>,
     ca_pub: Option<&str>,
@@ -240,7 +242,7 @@ pub(crate) fn cmd_extract_sign_image(
     cmd_sign_image(
         registry,
         app_name,
-        digest,
+        reference,
         vendor_prv,
         vendor_pub_signature,
         ca_pub,
@@ -251,18 +253,20 @@ pub(crate) fn cmd_extract_sign_image(
 pub(crate) fn cmd_verify_image(
     registry: &str,
     app: &str,
-    digest: &str,
+    reference: &str,
     ca_pub: &str,
 ) -> SignerResult<()>
 {
-    let blobs = Path::new(registry).join(app).join(BLOBS_SUBDIR);
+    let app = Path::new(registry).join(app);
+    let blobs = app.join(BLOBS_SUBDIR);
     info!(
         "Verifying config for manifest: \"{}\" in: \"{}\"",
-        digest,
-        blobs.display()
+        reference,
+        app.display()
     );
     let ca_pub = utils::file_read(ca_pub)?;
-    oci::verify_config(&blobs, digest, &ca_pub)?;
+    let digest = oci::find_manifest_by_reference(&app, &reference)?;
+    oci::verify_config(&blobs, &digest, &ca_pub)?;
 
     info!("Verification succesful");
 

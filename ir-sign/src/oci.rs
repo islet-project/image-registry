@@ -1,4 +1,5 @@
-use oci_spec::image::{ImageIndex, ImageManifest};
+use log::info;
+use oci_spec::image::{ImageIndex, ImageManifest, ANNOTATION_REF_NAME};
 use std::collections::HashMap;
 use std::fs::File;
 use std::path::Path;
@@ -9,11 +10,37 @@ const ANNOTATION_SIGNATURE: &str = "com.samsung.islet.image.signature";
 const ANNOTATION_VENDORPUB: &str = "com.samsung.islet.image.vendorpub";
 const ANNOTATION_VENDORPUB_SIGNATURE: &str = "com.samsung.islet.image.vendorpub.signature";
 
+const INDEX_JSON: &str = "index.json";
+
 macro_rules! err {
     ($($arg:tt)+) => (Err(SignerError::OciRegistry(format!($($arg)+))))
 }
 macro_rules! er {
     ($($arg:tt)+) => (SignerError::OciRegistry(format!($($arg)+)))
+}
+
+pub(crate) fn find_manifest_by_reference(app: &Path, reference: &str) -> SignerResult<String>
+{
+    let index = ImageIndex::from_file(app.join(INDEX_JSON))?;
+    let mut digest = Option::<&str>::None;
+
+    // assume it's a tag first
+    for desc in index.manifests() {
+        if let Some(anns) = desc.annotations() {
+            if let Some(tag) = anns.get(ANNOTATION_REF_NAME) {
+                if tag == reference {
+                    info!("Resolved tag \"{}\" as \"{}\"", tag, desc.digest());
+                    digest = Some(desc.digest());
+                }
+            };
+        };
+    }
+
+    if digest.is_none() {
+        digest = Some(reference);
+    }
+
+    Ok(digest.unwrap().to_string())
 }
 
 pub(crate) fn verify_vendor_pub_signature(

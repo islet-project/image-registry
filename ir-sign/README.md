@@ -85,7 +85,7 @@ This signature (`vendor.pub.sig`) should be sent to Vendor.
 - Vendor: Sign the image with all the collected data
 
 ```
-cargo run -- sign-image -r REGISTRY_DIR -a APP_NAME -d MANIFEST_DIGEST -v vendor.prv -s vendor.pub.sig -c root-ca.pub
+cargo run -- sign-image -r REGISTRY_DIR -a APP_NAME -d MANIFEST_REFERENCE -v vendor.prv -s vendor.pub.sig -c root-ca.pub
 ```
 
 The tool will verify the given signature for Vendor public key first to make
@@ -106,7 +106,7 @@ layout index for now).
 - CA/Vendor: Sign the Vendor public key and then sign the image
 
 ```
-cargo run -- sign-image -r REGISTRY_DIR -a APP_NAME -d MANIFEST_DIGEST -v vendor.prv -x root-ca.prv
+cargo run -- sign-image -r REGISTRY_DIR -a APP_NAME -d MANIFEST_REFERENCE -v vendor.prv -x root-ca.prv
 ```
 
 This is an unrealistic scenario as it assumes access to ROOT-CA private key
@@ -126,7 +126,7 @@ A command to do this is `extract-sign-image`. It's very similar to
 into registry (only uncompressed TAR files are supported now).
 
 ```
-cargo run -- extract-sign-image -r REGISTRY_DIR -f OCI_IMAGE_TAR -a OPTIONAL_APP_NAME -d MANIFEST_DIGEST -v vendor.prv [OTHER_CRYPTO_PARAMS]
+cargo run -- extract-sign-image -r REGISTRY_DIR -f OCI_IMAGE_TAR -a OPTIONAL_APP_NAME -d MANIFEST_REFERENCE -v vendor.prv [OTHER_CRYPTO_PARAMS]
 ```
 
 `OPTIONAL_APP_NAME` is an app name that will be created in the registry. If
@@ -141,7 +141,7 @@ public key. All the other data are taken from the manifest annotations and from
 files themselves.
 
 ```
-cargo run -- verify-image -r REGISTRY_DIR -a APP_NAME -d MANIFEST_DIGEST -c root-ca.pub
+cargo run -- verify-image -r REGISTRY_DIR -a APP_NAME -d MANIFEST_REFERENCE -c root-ca.pub
 ```
 
 This will verify the following:
