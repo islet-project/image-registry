@@ -14,7 +14,7 @@ type SignerResult<T> = Result<T, error::SignerError>;
 struct Cli
 {
     #[command(subcommand)]
-    command: Option<Commands>,
+    command: Commands,
 }
 
 #[derive(Subcommand, Debug)]
@@ -221,11 +221,7 @@ fn main() -> SignerResult<()>
 
     let cli = Cli::parse();
 
-    let Some(command) = cli.command else {
-        return Err("You need to pass command".into());
-    };
-
-    match command {
+    match cli.command {
         Commands::GenKey { output } => subcmds::cmd_generate_key(&output)?,
         Commands::ExtractPublic { input, output } => subcmds::cmd_extract_public(&input, &output)?,
         Commands::Sign {
