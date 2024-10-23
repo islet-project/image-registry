@@ -5,6 +5,7 @@ use hyper_util::rt::{TokioExecutor, TokioIo};
 use log::debug;
 use ratls::{ChainVerifier, InternalTokenVerifier, RaTlsCertVeryfier};
 use realm_verifier::{parser_json::parse_value, RealmVerifier};
+use tokio_rustls::rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use std::{fs::File, io::BufReader, sync::Arc};
 use tokio::net::TcpListener;
 use tokio_rustls::rustls::crypto::ring::default_provider;
@@ -17,7 +18,40 @@ use crate::config::Config;
 use crate::utils;
 use crate::RegistryResult;
 
-fn tls_server_config() -> RegistryResult<Arc<ServerConfig>>
+enum TLSConfig<'a>
+{
+    TLS(Arc<ServerConfig>),
+    RaTLS(RaTLS<'a>),
+}
+
+struct RaTLS<'a> {
+    pub certs: Vec<CertificateDer<'a>>,
+    pub priv_key: PrivateKeyDer<'a>,
+    pub client_token_verifier: Arc<dyn InternalTokenVerifier>,
+}
+
+impl TLSConfig<'static>
+{
+    pub fn get_rustls_config(&self) -> RegistryResult<Arc<ServerConfig>>
+    {
+        match self {
+            Self::TLS(config) => Ok(config.clone()),
+            Self::RaTLS(ra_tls) => {
+                let rustls_config = ServerConfig::builder()
+                    .with_client_cert_verifier(Arc::new(RaTlsCertVeryfier::from_token_verifier(
+                        ra_tls.client_token_verifier.clone(),
+                    )))
+                    .with_single_cert(
+                        ra_tls.certs.clone(),
+                        ra_tls.priv_key.clone_key(),
+                    )?;
+                Ok(Arc::new(rustls_config))
+            }
+        }
+    }
+}
+
+fn tls_server_config() -> RegistryResult<TLSConfig<'static>>
 {
     let config = ServerConfig::builder()
         .with_no_client_auth()
@@ -26,23 +60,27 @@ fn tls_server_config() -> RegistryResult<Arc<ServerConfig>>
             utils::load_private_key_from_file(&Config::readu().key)?,
         )?;
 
-    Ok(Arc::new(config))
+    Ok(TLSConfig::TLS(Arc::new(config)))
 }
 
-fn ratls_server_config(
-    client_token_verifier: Arc<dyn InternalTokenVerifier>,
-) -> RegistryResult<Arc<ServerConfig>>
+fn ratls_server_config() -> RegistryResult<TLSConfig<'static>>
 {
-    let config = ServerConfig::builder()
-        .with_client_cert_verifier(Arc::new(RaTlsCertVeryfier::from_token_verifier(
-            client_token_verifier,
-        )))
-        .with_single_cert(
-            utils::load_certificates_from_pem(&Config::readu().cert)?,
-            utils::load_private_key_from_file(&Config::readu().key)?,
-        )?;
+    let json_reader = BufReader::new(File::open(&Config::readu().reference_json)?);
+    let mut reference_json: serde_json::Value = serde_json::from_reader(json_reader)?;
+    let reference_measurements = parse_value(reference_json["realm"]["reference-values"].take())?;
 
-    Ok(Arc::new(config))
+    let client_token_verifier = Arc::new(ChainVerifier::new(vec![
+        // Arc::new(VeraisonTokenVerifer::new(
+        //     &Config::readu().veraison_url,
+        //     &Config::readu().veraison_pubkey,
+        // )),
+        Arc::new(RealmVerifier::init(reference_measurements.clone())),
+    ]));
+    let certs = utils::load_certificates_from_pem(&Config::readu().cert)?;
+    let priv_key = utils::load_private_key_from_file(&Config::readu().key)?;
+
+
+    Ok(TLSConfig::RaTLS(RaTLS {client_token_verifier, certs, priv_key}))
 }
 
 pub async fn serve_tls(listener: TcpListener, app: Router) -> RegistryResult<()>
@@ -53,8 +91,8 @@ pub async fn serve_tls(listener: TcpListener, app: Router) -> RegistryResult<()>
         .install_default()
         .expect("Could not install CryptoProvider");
 
-    let rustls_config = tls_server_config()?;
-    serve_internal(listener, app, rustls_config).await
+    let tls_config = tls_server_config()?;
+    serve_internal(listener, app, tls_config).await
 }
 
 pub async fn serve_ratls(listener: TcpListener, app: Router) -> RegistryResult<()>
@@ -65,20 +103,8 @@ pub async fn serve_ratls(listener: TcpListener, app: Router) -> RegistryResult<(
         .install_default()
         .expect("Could not install CryptoProvider");
 
-    let json_reader = BufReader::new(File::open(&Config::readu().reference_json)?);
-    let mut reference_json: serde_json::Value = serde_json::from_reader(json_reader)?;
-    let reference_measurements = parse_value(reference_json["realm"]["reference-values"].take())?;
-
-    let client_token_verifier = Arc::new(ChainVerifier::new(vec![
-        // Arc::new(VeraisonTokenVerifer::new(
-        //     &Config::readu().veraison_url,
-        //     &Config::readu().veraison_pubkey,
-        // )),
-        Arc::new(RealmVerifier::init(reference_measurements)),
-    ]));
-
-    let rustls_config = ratls_server_config(client_token_verifier)?;
-    serve_internal(listener, app, rustls_config).await
+    let tls_config = ratls_server_config()?;
+    serve_internal(listener, app, tls_config).await
 }
 
 // For details on the code see here:
@@ -86,18 +112,16 @@ pub async fn serve_ratls(listener: TcpListener, app: Router) -> RegistryResult<(
 async fn serve_internal(
     listener: TcpListener,
     app: Router,
-    rustls_config: Arc<ServerConfig>,
+    tls_config: TLSConfig<'static>,
 ) -> RegistryResult<()>
 {
-    let tls_acceptor = TlsAcceptor::from(rustls_config);
-
     pin_mut!(listener);
 
     loop {
         let tower_service = app.clone();
-        let tls_acceptor = tls_acceptor.clone();
 
         let (cnx, addr) = listener.accept().await?;
+        let tls_acceptor = TlsAcceptor::from(tls_config.get_rustls_config()?);
 
         tokio::spawn(async move {
             let Ok(stream) = tls_acceptor.accept(cnx).await else {
