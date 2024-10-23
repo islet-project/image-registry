@@ -40,6 +40,22 @@ When the registry is loaded the applications starts to serve those images
 through HTTP OCI distribution protocol. The HTTP can be used directly
 (unencrypted), using TLS or using RaTLS.
 
+Each application is served under its own OCI namespace that is simply the name
+of the application.
+
+The examples for OCI distribution API that can be tested using any HTTP client
+(a browser for example):
+
+```
+http://SERVER_NAME:PORT/v2/
+http://SERVER_NAME:PORT/v2/application1/tags/list
+http://SERVER_NAME:PORT/v2/application2/manifests/latest
+http://SERVER_NAME:PORT/v2/application3/blobs/DIGEST
+```
+
+For TLS replace `http` with `https`. For RaTLS only RaTLS [client](../ir-client)
+can be used.
+
 # Usage
 
 To run the server with default options it's enough to do:
