@@ -8,6 +8,11 @@ creates a simple ECDSA (secp384r1) based chain of trust.
 Everything it generates is kept in various DER based formats (SEC1, SPKI, etc)
 and has been verified to be binary compatible with `openssl` cmd line tool.
 
+The signed metadata is held in [OCI specification
+annotations](https://github.com/opencontainers/image-spec/blob/main/annotations.md)
+and its purpose is to serve in the chain of trust in [application
+provisioning](https://github.com/islet-project/islet/tree/app-provisioning/examples/app-provisioning).
+
 # Workflow
 
 Below is written a simple workflow to sign the images. Some basic commands

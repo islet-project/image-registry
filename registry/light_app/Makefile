@@ -1,7 +1,7 @@
 all: print light_app.tar oci-layout
 
 print: print.c
-	bear -- aarch64-linux-gnu-gcc -nostdlib -O2 -static print.c -o print
+	aarch64-linux-gnu-gcc -nostdlib -O2 -static print.c -o print
 	aarch64-linux-gnu-strip print
 
 light_app.tar: print Dockerfile
