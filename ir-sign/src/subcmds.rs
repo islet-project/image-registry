@@ -4,7 +4,6 @@ use std::path::Path;
 
 use crate::{crypto, error::SignerError, oci, utils, SignerResult};
 
-const INDEX_JSON: &str = "index.json";
 const BLOBS_SUBDIR: &str = "blobs";
 
 macro_rules! err {
@@ -150,9 +149,9 @@ pub(crate) fn cmd_rehash_file(registry: &str, app: &str, digest: &str) -> Signer
     let blobs = Path::new(registry).join(app).join(BLOBS_SUBDIR);
     info!("Rehashing file: \"{}\" in: \"{}\"", digest, blobs.display());
 
-    let new_digest = oci::rehash_file(&blobs, digest)?;
+    let new_info = oci::rehash_rename_file(&blobs, digest)?;
 
-    if let Some(new_digest) = new_digest {
+    if let Some((new_digest, _)) = new_info {
         info!("Rehashed to: \"{}\"", new_digest);
     } else {
         info!("File does not require renaming");
@@ -199,13 +198,12 @@ pub(crate) fn cmd_sign_image(
     oci::sign_config(&blobs, &digest, &vendor_prv, &vendor_sign)?;
 
     info!("Rehashing file: \"{}\" in: \"{}\"", digest, blobs.display());
-    let new_digest = oci::rehash_file(&blobs, &digest)?;
+    let new_info = oci::rehash_rename_file(&blobs, &digest)?;
 
-    if let Some(new_digest) = new_digest {
+    if let Some((new_digest, _)) = new_info {
         info!("Rehashed to: \"{}\"", new_digest);
-        info!("Updating layout index");
-        let index = Path::new("..").join(INDEX_JSON);
-        oci::replace_hash_index(&blobs, &index, &digest, &new_digest)?;
+        info!("Updating all indexes referencing the manifest");
+        oci::replace_hash_index(&blobs, &digest, &new_digest)?;
     } else {
         info!("File does not require renaming");
     }
