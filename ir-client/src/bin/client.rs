@@ -74,7 +74,7 @@ struct GetBlobArgs {
     #[arg(short, long)]
     digest: String,
 
-    /// filename to write image archive [default: ./{uuid}.tar.gz]
+    /// write blob to path
     #[arg(short, long)]
     out: Option<String>,
 }
