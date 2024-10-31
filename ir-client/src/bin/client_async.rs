@@ -48,8 +48,11 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
+    /// Print manifest of application image
     GetManifest(GetManifestArgs),
+    /// Get blob file of application image
     GetBlob(GetBlobArgs),
+    /// List tags of application images
     ListTags(ListTagsArgs),
 }
 
