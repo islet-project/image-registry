@@ -38,7 +38,7 @@ struct Cli
     port: u16,
 
     /// RA-TLS: Veraison verification service host
-    #[arg(short = 'u', long, default_value = "http://localhost:8080")]
+    #[arg(short = 'u', long, default_value = "https://localhost:8080")]
     veraison_url: String,
 
     /// RA-TLS: Veraisons public key, none to use {crate_root}/ratls/pkey.jwk

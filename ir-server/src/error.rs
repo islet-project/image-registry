@@ -5,6 +5,7 @@ pub enum RegistryError
     Rustls(tokio_rustls::rustls::Error),
     SerdeJson(serde_json::Error),
     OciSpec(oci_spec::OciSpecError),
+    VeraisonToken(veraison_verifier::VeraisonTokenVeriferError),
     PrivateKeyParsing(String),
     Config(String),
     OciRegistry(String),
@@ -22,6 +23,7 @@ impl std::fmt::Display for RegistryError
             RegistryError::Rustls(e) => write!(f, "RustlsError({:?})", e),
             RegistryError::SerdeJson(e) => write!(f, "SerdeJsonError({:?})", e),
             RegistryError::OciSpec(e) => write!(f, "OciSpecError({:?}", e),
+            RegistryError::VeraisonToken(e) => write!(f, "VeraisonToken({:?})", e),
             RegistryError::PrivateKeyParsing(s) => write!(f, "PrivateKeyParsingError({})", s),
             RegistryError::Config(s) => write!(f, "ConfigError({})", s),
             RegistryError::OciRegistry(s) => write!(f, "OciRegistryError({})", s),
@@ -62,6 +64,14 @@ impl From<oci_spec::OciSpecError> for RegistryError
     fn from(value: oci_spec::OciSpecError) -> Self
     {
         Self::OciSpec(value)
+    }
+}
+
+impl From<veraison_verifier::VeraisonTokenVeriferError> for RegistryError
+{
+    fn from(value: veraison_verifier::VeraisonTokenVeriferError) -> Self
+    {
+        Self::VeraisonToken(value)
     }
 }
 

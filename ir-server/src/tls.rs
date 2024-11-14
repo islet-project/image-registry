@@ -5,14 +5,14 @@ use hyper_util::rt::{TokioExecutor, TokioIo};
 use log::debug;
 use ratls::{ChainVerifier, InternalTokenVerifier, RaTlsCertVeryfier};
 use realm_verifier::{parser_json::parse_value, RealmVerifier};
-use tokio_rustls::rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use std::{fs::File, io::BufReader, sync::Arc};
 use tokio::net::TcpListener;
 use tokio_rustls::rustls::crypto::ring::default_provider;
+use tokio_rustls::rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use tokio_rustls::rustls::ServerConfig;
 use tokio_rustls::TlsAcceptor;
 use tower_service::Service;
-// use veraison_verifier::VeraisonTokenVerifer;
+use veraison_verifier::VeraisonTokenVerifer;
 
 use crate::config::Config;
 use crate::utils;
@@ -24,7 +24,8 @@ enum TLSConfig<'a>
     RaTLS(RaTLS<'a>),
 }
 
-struct RaTLS<'a> {
+struct RaTLS<'a>
+{
     pub certs: Vec<CertificateDer<'a>>,
     pub priv_key: PrivateKeyDer<'a>,
     pub client_token_verifier: Arc<dyn InternalTokenVerifier>,
@@ -41,10 +42,7 @@ impl TLSConfig<'static>
                     .with_client_cert_verifier(Arc::new(RaTlsCertVeryfier::from_token_verifier(
                         ra_tls.client_token_verifier.clone(),
                     )))
-                    .with_single_cert(
-                        ra_tls.certs.clone(),
-                        ra_tls.priv_key.clone_key(),
-                    )?;
+                    .with_single_cert(ra_tls.certs.clone(), ra_tls.priv_key.clone_key())?;
                 Ok(Arc::new(rustls_config))
             }
         }
@@ -70,17 +68,21 @@ fn ratls_server_config() -> RegistryResult<TLSConfig<'static>>
     let reference_measurements = parse_value(reference_json["realm"]["reference-values"].take())?;
 
     let client_token_verifier = Arc::new(ChainVerifier::new(vec![
-        // Arc::new(VeraisonTokenVerifer::new(
-        //     &Config::readu().veraison_url,
-        //     &Config::readu().veraison_pubkey,
-        // )),
+        Arc::new(VeraisonTokenVerifer::new(
+            &Config::readu().veraison_url,
+            std::fs::read_to_string(&Config::readu().veraison_pubkey)?,
+            None,
+        )?),
         Arc::new(RealmVerifier::init(reference_measurements.clone())),
     ]));
     let certs = utils::load_certificates_from_pem(&Config::readu().cert)?;
     let priv_key = utils::load_private_key_from_file(&Config::readu().key)?;
 
-
-    Ok(TLSConfig::RaTLS(RaTLS {client_token_verifier, certs, priv_key}))
+    Ok(TLSConfig::RaTLS(RaTLS {
+        client_token_verifier,
+        certs,
+        priv_key,
+    }))
 }
 
 pub async fn serve_tls(listener: TcpListener, app: Router) -> RegistryResult<()>
