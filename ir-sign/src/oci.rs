@@ -180,7 +180,7 @@ fn replace_hash_index_inner(
         match descriptor.media_type() {
             MediaType::ImageIndex => {
                 let new_info = replace_hash_index_inner(
-                    &blobs,
+                    blobs,
                     IndexSource::Digest(descriptor.digest()),
                     signed_from,
                     signed_to,
@@ -209,7 +209,7 @@ fn replace_hash_index_inner(
 
         // rename only if given as digest, don't rename index.json
         if let IndexSource::Digest(digest) = index {
-            let new_info = rehash_rename_file(&blobs, &digest)?;
+            let new_info = rehash_rename_file(blobs, digest)?;
             return Ok(new_info);
         }
     }

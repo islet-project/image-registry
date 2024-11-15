@@ -263,7 +263,7 @@ pub(crate) fn cmd_verify_image(
         app.display()
     );
     let ca_pub = utils::file_read(ca_pub)?;
-    let digest = oci::find_manifest_by_reference(&app, &reference)?;
+    let digest = oci::find_manifest_by_reference(&app, reference)?;
     oci::verify_config(&blobs, &digest, &ca_pub)?;
 
     info!("Verification succesful");

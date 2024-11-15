@@ -20,8 +20,8 @@ use crate::RegistryResult;
 
 enum TLSConfig<'a>
 {
-    TLS(Arc<ServerConfig>),
-    RaTLS(RaTLS<'a>),
+    Tls(Arc<ServerConfig>),
+    RaTls(RaTLS<'a>),
 }
 
 struct RaTLS<'a>
@@ -36,8 +36,8 @@ impl TLSConfig<'static>
     pub fn get_rustls_config(&self) -> RegistryResult<Arc<ServerConfig>>
     {
         match self {
-            Self::TLS(config) => Ok(config.clone()),
-            Self::RaTLS(ra_tls) => {
+            Self::Tls(config) => Ok(config.clone()),
+            Self::RaTls(ra_tls) => {
                 let rustls_config = ServerConfig::builder()
                     .with_client_cert_verifier(Arc::new(RaTlsCertVeryfier::from_token_verifier(
                         ra_tls.client_token_verifier.clone(),
@@ -58,7 +58,7 @@ fn tls_server_config() -> RegistryResult<TLSConfig<'static>>
             utils::load_private_key_from_file(&Config::readu().key)?,
         )?;
 
-    Ok(TLSConfig::TLS(Arc::new(config)))
+    Ok(TLSConfig::Tls(Arc::new(config)))
 }
 
 fn ratls_server_config() -> RegistryResult<TLSConfig<'static>>
@@ -78,7 +78,7 @@ fn ratls_server_config() -> RegistryResult<TLSConfig<'static>>
     let certs = utils::load_certificates_from_pem(&Config::readu().cert)?;
     let priv_key = utils::load_private_key_from_file(&Config::readu().key)?;
 
-    Ok(TLSConfig::RaTLS(RaTLS {
+    Ok(TLSConfig::RaTls(RaTLS {
         client_token_verifier,
         certs,
         priv_key,
