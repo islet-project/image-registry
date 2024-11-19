@@ -94,8 +94,6 @@ Options:
 ```
 
 The switches for Veraison and reference JSON are used for RaTLS and passed to
-the [RaTLS
-library](https://github.com/islet-project/remote-attestation/tree/main/lib/ratls)
-and its verifiers
-([Veraison](https://github.com/islet-project/remote-attestation/tree/main/lib/ratls/veraison-verifier),
-[Realm](https://github.com/islet-project/remote-attestation/tree/main/lib/realm-verifier)).
+the [RaTLS library](https://github.com/islet-project/ratls) and its verifiers
+([Veraison](https://github.com/islet-project/ratls/tree/main/veraison-verifier),
+[Realm](https://github.com/islet-project/realm-verifier)).
