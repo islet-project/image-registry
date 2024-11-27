@@ -25,3 +25,22 @@ the detailed readme [here](ir-sign/).
 Very small example registry for the server to have something to run on by
 default. It also contains a simple docker built AARCH64 "hello world"
 application. See the detailed readme [here](registry/).
+
+# Simple test
+
+To perform the simplest possible test of client/server communication with ratls
+on one machine (using localhost) one can do:
+
+## Server
+
+```
+cd ir-server
+cargo run --features disable-challenge-veraison -- -t ra-tls
+```
+
+## Client
+
+```
+cd ir-client
+cargo run --bin client -- -t ra-tls get-manifest -a com.samsung.example.app -r stable
+```
