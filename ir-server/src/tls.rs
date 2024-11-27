@@ -68,6 +68,7 @@ fn ratls_server_config() -> RegistryResult<TLSConfig<'static>>
     let reference_measurements = parse_value(reference_json["realm"]["reference-values"].take())?;
 
     let client_token_verifier = Arc::new(ChainVerifier::new(vec![
+        #[cfg(not(feature = "disable-challenge-veraison"))]
         Arc::new(VeraisonTokenVerifer::new(
             &Config::readu().veraison_url,
             std::fs::read_to_string(&Config::readu().veraison_pubkey)?,

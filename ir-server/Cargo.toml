@@ -35,3 +35,7 @@ bytes = "*"
 ratls = { git = "https://github.com/islet-project/ratls" }
 realm-verifier = { git = "https://github.com/islet-project/realm-verifier" }
 veraison-verifier = { git = "https://github.com/islet-project/veraison-verifier" }
+
+[features]
+# this is for testing purposes only, DO NOT ENABLE otherwise
+disable-challenge-veraison = [ "ratls/disable-challenge" ]
