@@ -119,6 +119,7 @@ impl Config
 
 type LockResult<Guard> = Result<Guard, PoisonError<Guard>>;
 
+#[allow(static_mut_refs)]
 impl Config
 {
     pub fn get() -> &'static RwLock<Config>
