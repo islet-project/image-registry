@@ -1,0 +1,30 @@
+{
+	"schemaVersion": 2,
+	"mediaType": "application/vnd.oci.image.manifest.v1+json",
+	"config": {
+		"mediaType": "application/vnd.oci.image.config.v1+json",
+		"digest": "sha256:ae709b3ab794a7059249f1e80ec5f66735571be8bf40b272deafe4acbad6ec0f",
+		"size": 1168
+	},
+	"layers": [
+		{
+			"mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+			"digest": "sha256:733da0bad0eb61af50fb99692f420a636a3d42ff97ac2faa31d777b679e32e57",
+			"size": 145
+		},
+		{
+			"mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+			"digest": "sha256:47a4dd0f211411caf746fa05dc39764de056c68b521e0b5e440381a9323570a3",
+			"size": 146
+		},
+		{
+			"mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+			"digest": "sha256:f966548f0fb574ef78747bf3a190e14fbd92c88cf64e428580788a7c285e2cbe",
+			"size": 146
+		}
+	],
+	"annotations": {
+		"com.samsung.islet.image.signature": "TODO: Signature",
+		"com.samsung.islet.image.certificate": "TODO: Certificate"
+	}
+}
