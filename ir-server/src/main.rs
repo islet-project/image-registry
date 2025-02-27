@@ -1,17 +1,7 @@
-mod config;
-mod error;
-mod httpd;
-mod oci;
-mod registry;
-mod tls;
-mod utils;
+use ir_server::*;
 
 use clap::Parser;
-use config::Config;
 use log::{debug, error, info};
-use oci::Registry;
-
-type RegistryResult<T> = Result<T, error::RegistryError>;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
@@ -31,7 +21,7 @@ struct Cli
 
     /// TLS variant to use
     #[arg(short, long, default_value_t, value_enum)]
-    tls: config::Protocol,
+    tls: ConfigProtocol,
 
     /// server port
     #[arg(short, long, default_value_t = 1337)]
@@ -51,7 +41,7 @@ struct Cli
 }
 
 #[tokio::main]
-async fn main() -> RegistryResult<()>
+async fn main() -> ir_server::RegistryResult<()>
 {
     env_logger::init_from_env(env_logger::Env::default().default_filter_or("debug"));
 
@@ -72,14 +62,14 @@ async fn main() -> RegistryResult<()>
         config.tls = cli.tls;
     }
 
-    debug!("{:#?}", Config::readu());
+    debug!("{:#?}", ir_server::Config::readu());
 
-    let reg = Registry::import(&Config::readu().root)?;
+    let reg = OciRegistry::import(&Config::readu().root)?;
     debug!("{:#?}", reg);
     reg.log_summary();
 
     info!("Launching the HTTP(S) server");
-    if let Result::Err(e) = httpd::run(reg).await {
+    if let Result::Err(e) = httpd_run(reg).await {
         error!("{}", e);
     }
 
