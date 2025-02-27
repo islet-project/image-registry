@@ -70,6 +70,7 @@ impl Application
         let digest = Digest::try_from(desc.digest())?;
         let path = self.path.join(BLOBS_SUBDIR).join(digest.to_path());
 
+        println!("{:?}", path);
         if !path.exists() {
             err!("The requested digest doesn't exist: {}", digest)?;
         }
@@ -93,7 +94,7 @@ impl Application
         // - load tags from annotations
         if layout_index {
             if !sha2::verify(&path, &digest)? {
-                err!("SHA failed for \"{}\"", path.display())?;
+                err!("SHA failed for: \"{}\"", path.display())?;
             }
 
             if let Some(anns) = desc.annotations() {
@@ -134,7 +135,7 @@ impl Application
     {
         let index = match ImageIndex::from_file(&path) {
             Ok(i) => i,
-            Err(e) => err!("Error importing \"{}\": {}", path.as_ref().display(), e)?,
+            Err(e) => err!("Error importing: \"{}\": {}", path.as_ref().display(), e)?,
         };
 
         index.validate()?;
@@ -151,7 +152,7 @@ impl Application
     {
         let manifest = match ImageManifest::from_file(&path) {
             Ok(i) => i,
-            Err(e) => err!("Error importing \"{}\": {}", path.as_ref().display(), e)?,
+            Err(e) => err!("Error importing: \"{}\": {}", path.as_ref().display(), e)?,
         };
 
         manifest.validate()?;
@@ -200,7 +201,7 @@ impl Application
 
         let oci_layout = match OciLayout::from_file(path.join(OCI_LAYOUT)) {
             Ok(l) => l,
-            Err(e) => err!("Error importing \"{}\": {}", OCI_LAYOUT, e)?,
+            Err(e) => err!("Error importing: \"{}\": {}", OCI_LAYOUT, e)?,
         };
 
         oci_layout.validate()?;
@@ -214,5 +215,71 @@ impl Application
         }
 
         Ok(app)
+    }
+}
+
+#[cfg(test)]
+mod tests
+{
+    use super::{Application, RegistryError};
+
+    #[test]
+    fn application_correct()
+    {
+        assert!(Application::import("tests/applications/correct").is_ok());
+    }
+
+    #[test]
+    fn application_missing_index() -> Result<(), String>
+    {
+        match Application::import("tests/applications/missing_index") {
+            Err(RegistryError::OciRegistry(e)) if e.contains("Error importing:") => Ok(()),
+            e => Err(format!("App should've failed to load with a specific error, returned {:?}", e)),
+        }
+    }
+
+    #[test]
+    fn application_missing_manifest() -> Result<(), String>
+    {
+        match Application::import("tests/applications/missing_manifest") {
+            Err(RegistryError::OciRegistry(e)) if e.contains("The requested digest doesn't exist:") => Ok(()),
+            e => Err(format!("App should've failed to load with a specific error, returned {:?}", e)),
+        }
+    }
+
+    #[test]
+    fn application_missing_config() -> Result<(), String>
+    {
+        match Application::import("tests/applications/missing_config") {
+            Err(RegistryError::OciRegistry(e)) if e.contains("The requested digest doesn't exist:") => Ok(()),
+            e => Err(format!("App should've failed to load with a specific error, returned {:?}", e)),
+        }
+    }
+
+    #[test]
+    fn application_missing_blob() -> Result<(), String>
+    {
+        match Application::import("tests/applications/missing_blob") {
+            Err(RegistryError::OciRegistry(e)) if e.contains("The requested digest doesn't exist:") => Ok(()),
+            e => Err(format!("App should've failed to load with a specific error, returned {:?}", e)),
+        }
+    }
+
+    #[test]
+    fn application_wrong_manifest_size() -> Result<(), String>
+    {
+        match Application::import("tests/applications/wrong_manifest_size") {
+            Err(RegistryError::OciRegistry(e)) if e.contains("Wrong file length:") => Ok(()),
+            e => Err(format!("App should've failed to load with a specific error, returned {:?}", e)),
+        }
+    }
+
+    #[test]
+    fn application_wrong_manifest_digest() -> Result<(), String>
+    {
+        match Application::import("tests/applications/wrong_manifest_digest") {
+            Err(RegistryError::OciRegistry(e)) if e.contains("SHA failed for:") => Ok(()),
+            e => Err(format!("App should've failed to load with a specific error, returned {:?}", e)),
+        }
     }
 }
