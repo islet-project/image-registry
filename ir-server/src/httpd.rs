@@ -30,13 +30,13 @@ pub async fn run<T: ImageRegistry + 'static>(reg: T) -> RegistryResult<()>
 
     let app = Router::new()
         .route("/v2/", routing::get(get_support))
-        .route("/v2/:name/tags/list", routing::get(get_tags))
+        .route("/v2/{name}/tags/list", routing::get(get_tags))
         .route(
-            "/v2/:name/manifests/:reference",
+            "/v2/{name}/manifests/{reference}",
             routing::get(get_manifest).head(head_manifest),
         )
         .route(
-            "/v2/:name/blobs/:digest",
+            "/v2/{name}/blobs/{digest}",
             routing::get(get_blob).head(head_blob),
         )
         .with_state(reg)

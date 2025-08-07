@@ -7,7 +7,7 @@ edition = "2021"
 clap = { version = "*", features = [ "derive" ] }
 log = "*"
 env_logger = "*"
-rand_core = "*"
+rand_core = "0.6"
 hex = "*"
 oci-spec = "0.6"
 tar = "*"
