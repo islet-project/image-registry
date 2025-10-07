@@ -1955,6 +1955,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "p521"
+version = "0.13.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fc9e2161f1f215afdfce23677034ae137bbd45016a880c2eb3ba8eb95f085b2"
+dependencies = [
+ "base16ct",
+ "ecdsa",
+ "elliptic-curve",
+ "primeorder",
+ "rand_core 0.6.4",
+ "sha2",
+]
+
+[[package]]
 name = "parking_lot"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2352,7 +2366,7 @@ dependencies = [
 [[package]]
 name = "ratls"
 version = "0.1.0"
-source = "git+https://github.com/islet-project/ratls#0a3127dc97b9acea1656be59af9009f71a326566"
+source = "git+https://github.com/islet-project/ratls#7597bb68db19980b043f53480e3e5dee18296eec"
 dependencies = [
  "base64",
  "bcder",
@@ -2535,7 +2549,7 @@ dependencies = [
 [[package]]
 name = "rust-rsi"
 version = "0.1.0"
-source = "git+https://github.com/islet-project/rust-rsi#d48dca8483ded3e2c92f298809e322311531af87"
+source = "git+https://github.com/islet-project/rust-rsi#fcd1ed1a6f9b41e1d74c708c58c4b9c2d08bf128"
 dependencies = [
  "bindgen 0.72.0",
  "cc",
@@ -2546,6 +2560,7 @@ dependencies = [
  "nix",
  "p256",
  "p384",
+ "p521",
  "sha2",
 ]
 
