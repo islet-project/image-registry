@@ -7,7 +7,7 @@ use log::{debug, error, info};
 #[command(author, version, about)]
 struct Cli
 {
-    /// runtime server root directory, none to use {crate_root}/registry
+    /// runtime server root directory, none to use {crate_root}/../registry
     #[arg(short, long)]
     root: Option<String>,
 
@@ -62,7 +62,7 @@ async fn main() -> ir_server::RegistryResult<()>
         config.tls = cli.tls;
     }
 
-    debug!("{:#?}", ir_server::Config::readu());
+    debug!("{:#?}", Config::readu());
 
     let reg = OciRegistry::import(&Config::readu().root)?;
     debug!("{:#?}", reg);

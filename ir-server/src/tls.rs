@@ -12,6 +12,7 @@ use tokio_rustls::rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use tokio_rustls::rustls::ServerConfig;
 use tokio_rustls::TlsAcceptor;
 use tower_service::Service;
+#[cfg(not(feature = "disable-challenge-veraison"))]
 use veraison_verifier::VeraisonTokenVerifer;
 
 use crate::config::Config;
