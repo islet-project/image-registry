@@ -1,13 +1,12 @@
 use p384::ecdsa::{
-    signature::{DigestSigner, Signer},
-    Signature, SigningKey,
+
+    signature::{
+        hazmat::{PrehashSigner, PrehashVerifier},
+        Signer, Verifier,
+    },
+    Signature, SigningKey, VerifyingKey,
 };
-use p384::ecdsa::{
-    signature::{DigestVerifier, Verifier},
-    VerifyingKey,
-};
-use rand_core::OsRng;
-use sec1::{DecodeEcPrivateKey, EncodeEcPrivateKey};
+use p384::SecretKey;
 use sha2::{digest::DynDigest, Digest, Sha256, Sha384, Sha512};
 use spki::{der::Encode, DecodePublicKey, EncodePublicKey};
 use std::io;
@@ -22,7 +21,9 @@ macro_rules! err {
 
 pub(crate) fn import_private(input: &[u8]) -> SignerResult<SigningKey>
 {
-    Ok(SigningKey::from_sec1_der(input)?)
+    let secret = SecretKey::from_sec1_der(input)
+        .map_err(|e| SignerError::Crypto(format!("Failed to parse SEC1 private key: {e}")))?;
+    Ok(SigningKey::from(secret))
 }
 
 pub(crate) fn import_public(input: &[u8]) -> SignerResult<VerifyingKey>
@@ -32,8 +33,8 @@ pub(crate) fn import_public(input: &[u8]) -> SignerResult<VerifyingKey>
 
 pub(crate) fn export_private(key: &SigningKey) -> SignerResult<Vec<u8>>
 {
-    let bytes = key.to_sec1_der()?.to_bytes();
-    Ok(bytes.to_vec())
+    let secret = SecretKey::from(key);
+    Ok(secret.to_sec1_der()?.to_vec())
 }
 
 pub(crate) fn export_public(key: &VerifyingKey) -> SignerResult<Vec<u8>>
@@ -42,9 +43,13 @@ pub(crate) fn export_public(key: &VerifyingKey) -> SignerResult<Vec<u8>>
     Ok(bytes.to_vec())
 }
 
-pub(crate) fn generate_key() -> SigningKey
+pub(crate) fn generate_key() -> SignerResult<SigningKey>
 {
-    SigningKey::random(&mut OsRng)
+    // P-384 scalars are 48 bytes long
+    let mut seed = [0u8; 48];
+    getrandom::fill(&mut seed)
+        .map_err(|e| SignerError::Crypto(format!("OS RNG failure: {e}")))?;
+    Ok(SigningKey::from_slice(&seed)?)
 }
 
 pub(crate) fn extract_public(key: &SigningKey) -> VerifyingKey
@@ -71,7 +76,7 @@ pub(crate) fn sign_reader<T: io::Read>(key: &SigningKey, reader: &mut T) -> Sign
         }
         Digest::update(&mut hasher, &buf[0..n]);
     }
-    let sign: Signature = key.sign_digest(hasher);
+    let sign: Signature = key.sign_prehash(hasher.finalize().as_slice())?;
     let mut vec = Vec::new();
     sign.to_der().encode_to_vec(&mut vec)?;
     Ok(vec)
@@ -100,7 +105,7 @@ pub(crate) fn verify_reader<T: io::Read>(
         }
         Digest::update(&mut hasher, &buf[0..n]);
     }
-    key.verify_digest(hasher, &sign)?;
+    key.verify_prehash(hasher.finalize().as_slice(), &sign)?;
     Ok(())
 }
 
@@ -125,3 +130,4 @@ pub(crate) fn hash_reader<T: io::Read>(algo: &str, reader: &mut T) -> SignerResu
 
     Ok(hasher.finalize().to_vec())
 }
+

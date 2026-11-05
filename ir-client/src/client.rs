@@ -48,7 +48,7 @@ impl Client {
     ) -> Result<ImageInfo, Error> {
         let manifest = self.oci_client.get_manifest(app_name, reference).await?;
         let config_digest_str = manifest.config().digest();
-        let config_digest = Digest::try_from(config_digest_str.as_str())?;
+        let config_digest = Digest::try_from(config_digest_str.as_ref())?;
 
         let mut config_reader = self
             .oci_client
@@ -79,7 +79,7 @@ impl Client {
         let image = Image::init(dest.as_ref());
         info!("Image has {} layer(s)", image_info.layers.len());
         for (i, layer) in image_info.layers.iter().enumerate() {
-            let layer_digest = Digest::try_from(layer.digest().as_str())?;
+            let layer_digest = Digest::try_from(layer.digest().as_ref())?;
             let mut layer_reader = self
                 .oci_client
                 .get_blob_reader(&image_info.app_name, layer_digest)

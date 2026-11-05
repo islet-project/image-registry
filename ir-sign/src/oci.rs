@@ -30,7 +30,7 @@ pub(crate) fn find_manifest_by_reference(app: &Path, reference: &str) -> SignerR
             if let Some(tag) = anns.get(ANNOTATION_REF_NAME) {
                 if tag == reference {
                     info!("Resolved tag \"{}\" as \"{}\"", tag, desc.digest());
-                    digest = Some(desc.digest());
+                    digest = Some(desc.digest().as_ref());
                 }
             };
         };
@@ -128,7 +128,7 @@ pub(crate) fn sign_config<T: AsRef<Path>>(
 pub(crate) fn rehash_rename_file<T: AsRef<Path>>(
     blobs: T,
     digest: &str,
-) -> SignerResult<Option<(String, i64)>>
+) -> SignerResult<Option<(String, u64)>>
 {
     let blobs = blobs.as_ref();
     let digest = Digest::try_from(digest)?;
@@ -144,7 +144,7 @@ pub(crate) fn rehash_rename_file<T: AsRef<Path>>(
     } else {
         let new_path = blobs.join(new_digest.to_path());
         std::fs::rename(&path, &new_path)?;
-        let len = utils::file_len(&new_path)?.try_into().unwrap();
+        let len = utils::file_len(&new_path)?;
         Ok(Some((new_digest.into(), len)))
     }
 }
@@ -160,8 +160,8 @@ fn replace_hash_index_inner(
     index: IndexSource,
     signed_from: &str,
     signed_to: &str,
-    signed_len: i64,
-) -> SignerResult<Option<(String, i64)>>
+    signed_len: u64,
+) -> SignerResult<Option<(String, u64)>>
 {
     let current_path = match index {
         IndexSource::Path(path) => path.to_owned(),
@@ -181,20 +181,20 @@ fn replace_hash_index_inner(
             MediaType::ImageIndex => {
                 let new_info = replace_hash_index_inner(
                     blobs,
-                    IndexSource::Digest(descriptor.digest()),
+                    IndexSource::Digest(descriptor.digest().as_ref()),
                     signed_from,
                     signed_to,
                     signed_len,
                 )?;
                 if let Some((new_digest, new_len)) = new_info {
-                    descriptor.set_digest(new_digest);
+                    descriptor.set_digest(new_digest.parse::<oci_spec::image::Digest>()?);
                     descriptor.set_size(new_len);
                     modified = true;
                 }
             }
             MediaType::ImageManifest => {
-                if descriptor.digest() == signed_from {
-                    descriptor.set_digest(signed_to.to_string());
+                if descriptor.digest().as_ref() == signed_from {
+                    descriptor.set_digest(signed_to.parse::<oci_spec::image::Digest>()?);
                     descriptor.set_size(signed_len);
                     modified = true;
                 }
@@ -228,7 +228,7 @@ pub(crate) fn replace_hash_index<T: AsRef<Path>>(
 
     let signed_digest = Digest::try_from(signed_to)?;
     let signed_path = blobs_path.join(signed_digest.to_path());
-    let signed_len = utils::file_len(&signed_path)?.try_into().unwrap();
+    let signed_len = utils::file_len(&signed_path)?;
 
     // start the recursion from "index.json"
     replace_hash_index_inner(

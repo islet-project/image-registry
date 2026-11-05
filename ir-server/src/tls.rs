@@ -128,9 +128,12 @@ async fn serve_internal(
         let tls_acceptor = TlsAcceptor::from(tls_config.get_rustls_config()?);
 
         tokio::spawn(async move {
-            let Ok(stream) = tls_acceptor.accept(cnx).await else {
-                log::error!("error during tls handshake connection from {}", addr);
-                return;
+            let stream = match tls_acceptor.accept(cnx).await {
+                Ok(stream) => stream,
+                Err(err) => {
+                    log::error!("error during tls handshake connection from {}: {}", addr, err);
+                    return;
+                }
             };
 
             let stream = TokioIo::new(stream);

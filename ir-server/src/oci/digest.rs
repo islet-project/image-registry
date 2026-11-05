@@ -59,6 +59,16 @@ impl TryFrom<String> for Digest
     }
 }
 
+impl TryFrom<&oci_spec::image::Digest> for Digest
+{
+    type Error = RegistryError;
+
+    fn try_from(value: &oci_spec::image::Digest) -> Result<Self, Self::Error>
+    {
+        Digest::try_from(value.as_ref())
+    }
+}
+
 impl TryFrom<&str> for Digest
 {
     type Error = RegistryError;

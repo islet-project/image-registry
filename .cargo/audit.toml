@@ -1,0 +1,17 @@
+# cargo-audit configuration for the image-registry workspace.
+# See: https://github.com/RustSec/cargo-audit
+[advisories]
+ignore = [
+    # RUSTSEC-2023-0071: "Marvin Attack" - RSA decryption timing side-channel.
+    # Pulled in transitively by the `ratls` git dependency. Upstream rsa has
+    # not released a fixed version yet ("No fixed upgrade is available!").
+    # Re-evaluate when RustCrypto/RSA ships the masking mitigation and ratls
+    # bumps to it.
+    "RUSTSEC-2023-0071",
+    # RUSTSEC-2025-0111: tokio-tar parses PAX extended headers incorrectly
+    # (file smuggling). tokio-tar is unmaintained; no fixed version exists.
+    # Used by ir-client only when unpacking OCI layers. Follow-up: replace
+    # tokio-tar with the maintained `tar` crate driven from
+    # tokio::task::spawn_blocking, then remove this ignore.
+    "RUSTSEC-2025-0111",
+]
