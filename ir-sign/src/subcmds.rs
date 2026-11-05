@@ -14,7 +14,7 @@ pub(crate) fn cmd_generate_key(output: &str) -> SignerResult<()>
 {
     info!("Generating key: \"{}\"", output);
 
-    let key = crypto::generate_key();
+    let key = crypto::generate_key()?;
     let key_u8 = crypto::export_private(&key)?;
     utils::file_write(output, &key_u8)?;
 

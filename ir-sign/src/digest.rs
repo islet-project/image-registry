@@ -68,6 +68,16 @@ impl TryFrom<&str> for Digest
     }
 }
 
+impl TryFrom<&oci_spec::image::Digest> for Digest
+{
+    type Error = SignerError;
+
+    fn try_from(value: &oci_spec::image::Digest) -> Result<Self, Self::Error>
+    {
+        Digest::try_from(value.as_ref())
+    }
+}
+
 impl From<Digest> for String
 {
     fn from(value: Digest) -> Self
